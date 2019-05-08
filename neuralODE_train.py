@@ -198,3 +198,15 @@ predict_val = model.predict(x_test,batch_size=1024*32)
 predict_df = pd.DataFrame(out_scaler.inverse_transform(predict_val), columns=labels)
 r2= r2_score(predict_val,y_test)
 print(r2)
+
+#%%
+pred_df = pd.DataFrame(predict_val, columns=labels)
+test_df = pd.DataFrame(y_test, columns = labels)
+spl_idx=pred_df.sample(frac=0.1).index
+# sp='O'
+for sp in labels:
+  x=pred_df.sample(frac=0.1)
+  plt.plot(pred_df.iloc[spl_idx][sp],test_df.iloc[spl_idx][sp],'kd',ms=1)
+  plt.title('{} r2 ={}'.format(sp,r2_score(pred_df[sp],test_df[sp])))
+  plt.savefig('fig/{}_r2'.format(sp))
+  plt.show()

@@ -44,6 +44,7 @@ post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
 
+
 # %%
 post_model.predict(org[labels].iloc[0:1])
 
@@ -93,7 +94,7 @@ for n in [3]:
 #         test_target = test
     for sp in post_species.intersection(species):
         f, axarr = plt.subplots(1, 3)
-        f.suptitle(str(n) + '_' + sp)
+        f.suptitle(str(ini_T) + '_' + sp)
 
         axarr[0].plot(test[sp])
         axarr[0].plot(pred[sp], 'rd', ms=2)
@@ -116,5 +117,5 @@ for n in [3]:
 
 #           ax2.plot(no_scaler[sp], 'md', ms=2)
 
-#         plt.savefig('fig/' + str(n) + '_' + sp)
+        plt.savefig('fig/' + str(ini_T) + '_' + sp)
         plt.show()
