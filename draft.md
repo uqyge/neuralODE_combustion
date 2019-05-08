@@ -5,6 +5,8 @@ Neural network has been used to flamelet modelling.[]
 Combined with unsupervised SOM, neural network has been used for chemistry ode integration for fixed time steps.[]
 With the rapid growth in deep learning, modern neural network designs have been used to solve combustion chemistry [] with great success. However so far most application of the deep neural network are still focusing on a static neural network, the computational graph of the network are fixed during the inference. In this paper we show that by combining neural network with ODE numerics, the dynamic nerual ODE network can offer great computational saving and flexbility to chemical reaction modeling in combustion.
 
+![Neural ODE](img/nueralODE.jpeg)
+
 ## Neural ODE
 Common neural network is stationary. 
 There are similarity between residual network and ODE.
