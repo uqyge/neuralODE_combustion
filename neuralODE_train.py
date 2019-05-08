@@ -80,7 +80,7 @@ input_features = labels
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.1)
+    x_input, y_label, test_size=0.9)
 pickle.dump((org,new,in_scaler,out_scaler),open('./data/tmp.pkl','wb'))
 
 # %%
@@ -178,7 +178,7 @@ schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
 callbacks_list = [checkpoint]
 # callbacks_list = [checkpoint, schedule]
 
-# model.load_weights(filepath)
+model.load_weights(filepath)
 
 # fit the model
 history = model.fit(

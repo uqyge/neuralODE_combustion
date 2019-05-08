@@ -6,6 +6,10 @@ from keras.models import Sequential, load_model
 from src.dataGen import test_data
 
 org, new, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
+columns = org.columns
+species = org.columns
+labels = org.columns.drop(['dt', 'f', 'Hs', 'cp'])
+input_features = labels
 
 # %%
 out_m = out_scaler.std.mean_.astype('float32')
@@ -31,7 +35,7 @@ model_trans.layers[0].set_weights(
     [(1/in_s)*np.identity(len(in_m)), -(in_m/in_s)])
 
 # %%
-model_neuralODE = load_model('trained_fgm_nn.h5')
+model_neuralODE = load_model('base_neuralODE.h5')
 model_neuralODE.summary()
 
 # %%
@@ -39,7 +43,6 @@ post_model = Sequential()
 post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
-model = post_model
 
 # %%
 post_model.predict(org[labels].iloc[0:1])
@@ -48,12 +51,14 @@ out_scaler.inverse_transform(model_neuralODE.predict(
     in_scaler.transform(org[labels].iloc[0:1])))
 
 # %%
+
+
 def adEuler(data_in, dt):
     st = 10
     pred = data_in[input_features]
     for i in range(st):
         #     print(i)
-        # model_pred = pd.DataFrame(out_scaler.inverse_transform(model.predict(
+        # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
         #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
         model_pred = pd.DataFrame(post_model.predict(
             pred, batch_size=1024*8), columns=labels)
@@ -64,11 +69,7 @@ def adEuler(data_in, dt):
 
 
 # %%
-columns = df.columns
-species = df.columns
-
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
-
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
 ini_T = 1601
@@ -113,9 +114,7 @@ for n in [3]:
         axarr[2].plot(trGrad[sp], 'rd', ms=2)
 #       axarr[2].set_ylim(-0.1,0.)
 
-
 #           ax2.plot(no_scaler[sp], 'md', ms=2)
-
 
 #         plt.savefig('fig/' + str(n) + '_' + sp)
         plt.show()
