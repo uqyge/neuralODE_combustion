@@ -1,1 +1,2 @@
-# cantera
+# Neural ODE for combustion modelling
+
