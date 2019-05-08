@@ -206,7 +206,7 @@ spl_idx=pred_df.sample(frac=0.1).index
 # sp='O'
 for sp in labels:
   x=pred_df.sample(frac=0.1)
-  plt.plot(pred_df.iloc[spl_idx][sp],test_df.iloc[spl_idx][sp],'kd',ms=1)
+  plt.plot(pred_df.iloc[spl_idx][sp],test_df.iloc[spl_idx][sp],'rd',ms=1)
   plt.title('{} r2 ={}'.format(sp,r2_score(pred_df[sp],test_df[sp])))
   plt.savefig('fig/{}_r2'.format(sp))
   plt.show()

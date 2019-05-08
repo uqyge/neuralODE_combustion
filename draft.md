@@ -33,6 +33,7 @@ A multi branch bottleneck network is selected as the base network
 
 ### numerical gradient training
 r2 shows that the learning is successful.
+
 ![H2](fig/H2_r2.png)
 ![HO2](fig/HO2_r2.png)
 ![H2O](fig/H2O_r2.png)
