@@ -1,7 +1,6 @@
 import tensorflow as tf
-import keras
-from keras.layers import Dense, Activation, Input, BatchNormalization, Dropout, concatenate
-from keras import layers
+from tensorflow.keras.layers import Dense, Activation, Input, BatchNormalization, Dropout, concatenate
+from tensorflow.keras import layers
 
 def res_branch(bi, conv_name_base, bn_name_base, scale, input_tensor, n_neuron, stage, block,dp1, bn=False):
     x_1 = Dense(scale * n_neuron, name=conv_name_base + '2a_'+str(bi))(input_tensor)

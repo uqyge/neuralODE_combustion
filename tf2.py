@@ -1,12 +1,26 @@
+import tensorflow as tf
 
-#%%
-from scipy.integrate import odeint
-import pickle
-import pandas as pd
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras import optimizers
+
+import os
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential, Model, load_model
 from tensorflow.keras.layers import Dense, Activation
-from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.callbacks import ModelCheckpoint
+
 from src.dataGen import test_data
+from src.dataScaling import data_scaler
+# from src.res_block import res_block
+# from src.utils import SGDRScheduler
+
+import pickle
 
 org, new, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 columns = org.columns
@@ -58,62 +72,18 @@ out_scaler.inverse_transform(model_neuralODE.predict(
 
 
 def adEuler(data_in, dt):
-    st = 1
+    st = 10
     pred = data_in[input_features]
     for i in range(st):
         #     print(i)
-        model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
-            in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
-        # model_pred = pd.DataFrame(post_model.predict(
-        #     pred, batch_size=1024*8), columns=labels)
+        # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
+        #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
+        model_pred = pd.DataFrame(post_model.predict(
+            pred, batch_size=1024*8), columns=labels)
 
         pred = (model_pred)*dt/st + pred
 
     return pred, (pred-data_in)/dt
-
-# %%
-
-
-def adRk2(data_in, dt):
-    st = 10
-    pred = data_in[input_features]
-
-    for i in range(st):
-        pred_0 = pd.DataFrame(post_model.predict(
-            pred, batch_size=1024*8), columns=labels)
-        mid = pred_0*(dt/st)/2+pred
-
-        model_pred = pd.DataFrame(post_model.predict(
-            mid, batch_size=1024*8), columns=labels)
-
-#   pred = model_pred * data_in+data_in
-        pred = model_pred * dt/st + pred
-    return pred, model_pred
-
-
-# %%
-
-def dydt(x, t):
-    out = out_scaler.inverse_transform(
-        model.predict(in_scaler.transform(x.reshape(1, -1))))
-    return out.flatten()
-
-
-def odeInt(data_in, dt):
-    out_ode = []
-    for i in range(len(data_in)):
-        x0 = data_in[input_features].iloc[i:i+1]
-        ode_out = odeint(
-            dydt,
-            x0.values[0],
-            [0, dt]
-        )
-        out_ode.append(ode_out[1].reshape(1, -1))
-
-    out = np.concatenate(out_ode)
-    out = pd.DataFrame(out, columns=labels)
-
-    return out, (out-data_in[labels])/dt
 
 
 # %%
@@ -121,16 +91,15 @@ def odeInt(data_in, dt):
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
 ini_T = 1601
-dt = 1e-7
-for n in [2]:
+dt = 1e-6
+for n in [3]:
     input_0, test = test_data(ini_T, n, columns, dt)
 
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    # pred, model_pred = adEuler(input_0, dt)
-    pred, model_pred = adRk2(input_0, dt)
-    # pred, model_pred = odeInt(input_0, dt)
+#     pred, model_pred=euler(input_0, dt)
+    pred, model_pred = adEuler(input_0, dt)
 
     test_target = ((test-input_0) / dt)
     # pred, model_pred = test, test_target
@@ -154,9 +123,9 @@ for n in [2]:
 #         axarr[1].set_ylim(-0.005, 0.005)
         # axarr[1].set_title(str(n) + '_' + sp)
 
-        # ax2 = axarr[1].twinx()
-        # ax2.plot(test_target[sp], 'bd', ms=2)
-        # # ax2.plot(model_pred[sp], 'rd', ms=2)
+        ax2 = axarr[1].twinx()
+        ax2.plot(test_target[sp], 'bd', ms=2)
+        ax2.plot(model_pred[sp], 'rd', ms=2)
 #       ax2.set_ylim(-0.0015,0.0015)
 
         axarr[2].plot(testGrad[sp], 'bd', ms=2)

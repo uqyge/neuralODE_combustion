@@ -1,27 +1,27 @@
-import keras.backend as K
+from tensorflow.keras.callbacks import LearningRateScheduler, Callback
+import tensorflow.keras.backend as K
 import math
+import numpy as np
+
 
 def cubic_loss(y_true, y_pred):
     return K.mean(K.square(y_true - y_pred)*K.abs(y_true - y_pred), axis=-1)
 
+
 def coeff_r2(y_true, y_pred):
     from keras import backend as K
-    SS_res =  K.sum(K.square( y_true-y_pred ))
-    SS_tot = K.sum(K.square( y_true - K.mean(y_true) ) )
-    return ( 1 - SS_res/(SS_tot + K.epsilon()) )
+    SS_res = K.sum(K.square(y_true-y_pred))
+    SS_tot = K.sum(K.square(y_true - K.mean(y_true)))
+    return (1 - SS_res/(SS_tot + K.epsilon()))
 
-  
+
 def step_decay(epoch):
-   initial_lrate = 0.001
-   drop = 0.5
-   epochs_drop = 200.0
-   lrate = initial_lrate * math.pow(drop,math.floor((1+epoch)/epochs_drop))
-   return lrate
-  
+    initial_lrate = 0.001
+    drop = 0.5
+    epochs_drop = 200.0
+    lrate = initial_lrate * math.pow(drop, math.floor((1+epoch)/epochs_drop))
+    return lrate
 
-import keras.backend as K
-from keras.callbacks import LearningRateScheduler, Callback
-import math
 
 class SGDRScheduler(Callback):
     '''Cosine annealing learning rate scheduler with periodic restarts.
@@ -47,6 +47,7 @@ class SGDRScheduler(Callback):
         Blog post: jeremyjordan.me/nn-learning-rate
         Original paper: http://arxiv.org/abs/1608.03983
     '''
+
     def __init__(self,
                  min_lr,
                  max_lr,
@@ -71,8 +72,11 @@ class SGDRScheduler(Callback):
 
     def clr(self):
         '''Calculate the learning rate.'''
-        fraction_to_restart = self.batch_since_restart / (self.steps_per_epoch * self.cycle_length)
-        lr = self.min_lr + 0.5 * (self.max_lr - self.min_lr) * (1 + np.cos(fraction_to_restart * np.pi))
+        fraction_to_restart = self.batch_since_restart / \
+            (self.steps_per_epoch * self.cycle_length)
+        lr = self.min_lr + 0.5 * \
+            (self.max_lr - self.min_lr) * \
+            (1 + np.cos(fraction_to_restart * np.pi))
         return lr
 
     def on_train_begin(self, logs={}):
@@ -83,7 +87,8 @@ class SGDRScheduler(Callback):
     def on_batch_end(self, batch, logs={}):
         '''Record previous batch statistics and update the learning rate.'''
         logs = logs or {}
-        self.history.setdefault('lr', []).append(K.get_value(self.model.optimizer.lr))
+        self.history.setdefault('lr', []).append(
+            K.get_value(self.model.optimizer.lr))
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
 
