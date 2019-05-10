@@ -4,6 +4,7 @@ from scipy.integrate import odeint
 import pickle
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
 from src.dataGen import test_data
@@ -58,7 +59,7 @@ out_scaler.inverse_transform(model_neuralODE.predict(
 
 
 def adEuler(data_in, dt):
-    st = 1
+    st = 10
     pred = data_in[input_features]
     for i in range(st):
         #     print(i)
@@ -121,15 +122,15 @@ def odeInt(data_in, dt):
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
 ini_T = 1601
-dt = 1e-7
+dt = 1e-6
 for n in [2]:
     input_0, test = test_data(ini_T, n, columns, dt)
 
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    # pred, model_pred = adEuler(input_0, dt)
-    pred, model_pred = adRk2(input_0, dt)
+    pred, model_pred = adEuler(input_0, dt)
+    # pred, model_pred = adRk2(input_0, dt)
     # pred, model_pred = odeInt(input_0, dt)
 
     test_target = ((test-input_0) / dt)

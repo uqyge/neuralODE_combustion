@@ -36,12 +36,14 @@ def ignite_f(ini):
     n_fuel = ini[1]
     fuel = ini[2]
 
+    train_old = []
     train_org = []
     train_new = []
+    tmp = []
 
     t_end = 1e-3
 
-    dt_dict = [1e-7]
+    dt_dict = [3e-8]
     for dt in dt_dict:
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
@@ -87,19 +89,22 @@ def ignite_f(ini):
             # print(res.max())
 
             # Update the sample
-            train_org.append(state_org)
-            train_new.append(state_new)
+            tmp.append(state_org)
+            # train_new.append(state_new)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
             if ((res.max() < 1e-3 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
                 # if res.max() < 1e-5:
                 break
+        train_old = tmp[:len(tmp)-2]
+        train_org = tmp[1:len(tmp)-1]
+        train_new = tmp[2:len(tmp)]
 
-    return train_org, train_new
+    return train_old, train_org, train_new
 
 
 def dataGeneration():
-    T = np.random.rand(2) * 1200 + 1001
+    T = np.random.rand(20) * 1200 + 1001
 
     # n_s = np.random.rand(30) * 30 + 0.1
     # n_l = np.random.rand(30) * 30
@@ -124,8 +129,9 @@ def dataGeneration():
     e = time.time()
     print('There are {} sets.'.format(len(a)), e-s)
 
-    org = np.concatenate([x[0] for x in a])
-    new = np.concatenate([x[1] for x in a])
+    old = np.concatenate([x[0] for x in a])
+    org = np.concatenate([x[1] for x in a])
+    new = np.concatenate([x[2] for x in a])
 
     gas = ct.Solution('../data/h2_sandiego.cti')
     columnNames = gas.species_names
@@ -136,12 +142,13 @@ def dataGeneration():
     columnNames = columnNames + ['dt']
     columnNames = columnNames + ['f']
 
+    train_old = pd.DataFrame(data=old, columns=columnNames)
     train_org = pd.DataFrame(data=org, columns=columnNames)
     train_new = pd.DataFrame(data=new, columns=columnNames)
 
-    df = pd.concat([train_org, train_new])
+    df = pd.concat([train_old, train_org, train_new])
     key = 'all_the_things'
-    df.to_hdf('merged.h5', key, complib='zlib', complevel=9)
+    df.to_hdf('central.h5', key, complib='zlib', complevel=9)
 
 
 def ignite_post(ini):

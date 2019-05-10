@@ -25,25 +25,38 @@ from src.utils import SGDRScheduler
 
 import pickle
 
-df_load = pd.read_hdf('data/merged.h5')
+# df_load = pd.read_hdf('data/merged.h5')
+df_load = pd.read_hdf('src/central.h5')
 
 df = df_load.astype('float32', copy=True)
 # df=df_load
 print(df.shape)
+# define the labels
+labels = df.columns.drop(['dt', 'f', 'Hs', 'cp'])
+# labels=['HO2']
 
-org = df[0:int(df.shape[0]/2)].reset_index(drop=True)
-new = df[int(df.shape[0]/2):].reset_index(drop=True)
+# input_features=df.columns.drop(['f'])
+input_features = labels
+
+old = df[0:int(df.shape[0]/3)].reset_index(drop=True)
+org = df[int(df.shape[0]/3):2*int(df.shape[0]/3)].reset_index(drop=True)
+new = df[int(2*df.shape[0]/3):].reset_index(drop=True)
+
+# org = df[0:int(df.shape[0]/2)].reset_index(drop=True)
+# new = df[int(df.shape[0]/2):].reset_index(drop=True)
 print(org.columns)
 
 # %%
 idx_dt = (org['dt'] < 5e-7) & (org['dt'] > 5e-9)
 print(sum(idx_dt))
+old = old[idx_dt]
 org = org[idx_dt]
 new = new[idx_dt]
 
 # %%
 idx = (org > 1e-15).all(1)
 print(sum(idx))
+old = old[idx]
 org = org[idx]
 new = new[idx]
 
@@ -51,6 +64,7 @@ new = new[idx]
 # idx_f = ((new/org) < 5).all(1)
 idx_f = abs((new[labels]-org[labels]).div(org.dt,axis=0)).max(1)>0.01
 print(sum(idx_f))
+old = old[idx_f]
 org = org[idx_f]
 new = new[idx_f]
 
@@ -60,8 +74,10 @@ def read_h5_data(input_features, labels):
     in_scaler = data_scaler()
     input_np = in_scaler.fit_transform(input_df[input_features].values, 'std2')
 
-#     label_df=(new[labels]-org[labels])
-    label_df = ((new[labels]-org[labels]).div(org.dt, axis=0))
+
+    
+    label_df = ((new[labels]-old[labels]).div((org.dt+old.dt), axis=0))
+    # label_df = ((new[labels]-org[labels]).div(org.dt, axis=0))
 #     label_df=(new[labels])/org[labels]
 #     label_df=dydt[labels]
 
@@ -72,13 +88,6 @@ def read_h5_data(input_features, labels):
 
 
 # %%
-# define the labels
-labels = df.columns.drop(['dt', 'f', 'Hs', 'cp'])
-# labels=['HO2']
-
-# input_features=df.columns.drop(['f'])
-input_features = labels
-
 # read in the data
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
@@ -168,7 +177,7 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
-for i in range(6):
+for i in range(4):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
