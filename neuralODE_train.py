@@ -92,7 +92,7 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.8)
+    x_input, y_label, test_size=0.5)
 pickle.dump((org, new, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%

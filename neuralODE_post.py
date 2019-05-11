@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
 from src.dataGen import test_data
 
-org, new, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
+org, _, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 columns = org.columns
 species = org.columns
 labels = org.columns.drop(['dt', 'f', 'Hs', 'cp'])
@@ -55,41 +55,23 @@ post_model.predict(org[labels].iloc[0:1])
 out_scaler.inverse_transform(model_neuralODE.predict(
     in_scaler.transform(org[labels].iloc[0:1])))
 
-# %%
-
-
-def adEuler(data_in, dt):
-    st = 10
-    pred = data_in[input_features]
-    for i in range(st):
-        #     print(i)
-        # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
-        #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
-        model_pred = pd.DataFrame(post_model.predict(
-            pred, batch_size=1024*8), columns=labels)
-
-        pred = (model_pred)*dt/st + pred
-
-    return pred, (pred-data_in)/dt
 
 # %%
 
 
-def adRk2(data_in, dt):
-    st = 10
+def euler(data_in, dt):
+
     pred = data_in[input_features]
 
-    for i in range(st):
-        pred_0 = pd.DataFrame(post_model.predict(
-            pred, batch_size=1024*8), columns=labels)
-        mid = pred_0*(dt/st)/2+pred
+    #     print(i)
+    # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
+    #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
+    model_pred = pd.DataFrame(post_model.predict(
+        pred, batch_size=1024*8), columns=labels)
 
-        model_pred = pd.DataFrame(post_model.predict(
-            mid, batch_size=1024*8), columns=labels)
+    pred = (model_pred)*dt + pred
 
-#   pred = model_pred * data_in+data_in
-        pred = model_pred * dt/st + pred
-    return pred, model_pred
+    return pred
 
 
 def rk2(data_in, dt):
@@ -106,8 +88,6 @@ def rk2(data_in, dt):
     pred = k2 * dt + pred
 
     return pred
-
-# %%
 
 
 def rk4(data_in, dt):
@@ -179,11 +159,9 @@ for n in [2]:
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    # pred, model_pred=adEuler(input_0, dt)
-    # pred, model_pred = adRk2(input_0, dt)
-    # pred, model_pred = adRk4(input_0, dt)
     # pred, model_pred = nvAd(input_0, dt, rk4, 10)
-    pred, model_pred = nvAd(input_0, dt, rk2, 10)
+    # pred, model_pred = nvAd(input_0, dt, rk2, 10)
+    pred, model_pred = nvAd(input_0, dt, euler, 10)
     # pred, model_pred = odeInt(input_0, dt)
 
     test_target = ((test-input_0) / dt)
@@ -193,7 +171,7 @@ for n in [2]:
         test_target[labels]), columns=labels)
     trGrad = pd.DataFrame(out_scaler.transform(
         model_pred[labels]), columns=labels)
-#         test_target = test
+
     for sp in post_species.intersection(species):
         f, axarr = plt.subplots(1, 3)
         f.suptitle(str(ini_T) + '_' + sp)
