@@ -54,7 +54,7 @@ org = org[idx_dt]
 new = new[idx_dt]
 
 # %%
-idx = (org > 1e-15).all(1)
+idx = (org > 0).all(1)
 print(sum(idx))
 old = old[idx]
 org = org[idx]
@@ -62,7 +62,7 @@ new = new[idx]
 
 # %%
 # idx_f = ((new/org) < 5).all(1)
-idx_f = abs((new[labels]-org[labels]).div(org.dt,axis=0)).max(1)>0.01
+idx_f = abs((new[labels]-org[labels]).div(org.dt,axis=0)).max(1)>0.05
 print(sum(idx_f))
 old = old[idx_f]
 org = org[idx_f]
@@ -92,7 +92,7 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.9)
+    x_input, y_label, test_size=0.8)
 pickle.dump((org, new, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
@@ -177,16 +177,16 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
-for i in range(4):
+for i in range(9):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
 schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
                          steps_per_epoch=np.ceil(epoch_size/batch_size),
-                         cycle_length=c_len, lr_decay=0.8, mult_factor=2)
+                         cycle_length=c_len, lr_decay=0.9, mult_factor=2)
 
-callbacks_list = [checkpoint]
-# callbacks_list = [checkpoint, schedule]
+callbacks_list1 = [checkpoint]
+callbacks_list2 = [checkpoint, schedule]
 
 # model.load_weights(filepath)
 
@@ -197,10 +197,19 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list,
-    shuffle=True
+    callbacks=callbacks_list2,
+    shuffle=False
     )
-
+# fit the model
+history = model.fit(
+    x_train, y_train,
+    epochs=epochs,
+    batch_size=batch_size,
+    validation_split=vsplit,
+    verbose=2,
+    callbacks=callbacks_list2,
+    shuffle=False
+    )
 model.save('base_neuralODE.h5')
 
 # %%

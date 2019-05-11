@@ -1,5 +1,6 @@
 import pandas as pd
 import dask
+import dask.dataframe as dd
 from dask.delayed import delayed
 
 import time
@@ -43,7 +44,7 @@ def ignite_f(ini):
 
     t_end = 1e-3
 
-    dt_dict = [3e-8]
+    dt_dict = [1e-8]
     for dt in dt_dict:
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
@@ -93,7 +94,7 @@ def ignite_f(ini):
             # train_new.append(state_new)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
-            if ((res.max() < 1e-3 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
+            if ((res.max() < 1e-2 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
                 # if res.max() < 1e-5:
                 break
         train_old = tmp[:len(tmp)-2]
@@ -148,7 +149,12 @@ def dataGeneration():
 
     df = pd.concat([train_old, train_org, train_new])
     key = 'all_the_things'
-    df.to_hdf('central.h5', key, complib='zlib', complevel=9)
+    ddf = dd.from_pandas(df, npartitions=100)
+    s = time.time()
+    df.to_hdf('central_1e-8.h5', key, complib='zlib', complevel=0)
+    # ddf.to_hdf('test.h5', '/test')
+    e = time.time()
+    print('saving takes {}s'.format(e-s))
 
 
 def ignite_post(ini):

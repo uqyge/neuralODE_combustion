@@ -1,5 +1,5 @@
 
-#%%
+# %%
 from scipy.integrate import odeint
 import pickle
 import pandas as pd
@@ -63,10 +63,10 @@ def adEuler(data_in, dt):
     pred = data_in[input_features]
     for i in range(st):
         #     print(i)
-        model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
-            in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
-        # model_pred = pd.DataFrame(post_model.predict(
-        #     pred, batch_size=1024*8), columns=labels)
+        # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
+        #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
+        model_pred = pd.DataFrame(post_model.predict(
+            pred, batch_size=1024*8), columns=labels)
 
         pred = (model_pred)*dt/st + pred
 
@@ -92,11 +92,61 @@ def adRk2(data_in, dt):
     return pred, model_pred
 
 
+def rk2(data_in, dt):
+
+    pred = data_in[input_features]
+
+    k1 = pd.DataFrame(post_model.predict(
+        pred, batch_size=1024*8), columns=labels)
+    mid = k1*(dt/2)+pred
+
+    k2 = pd.DataFrame(post_model.predict(
+        mid, batch_size=1024*8), columns=labels)
+
+    pred = k2 * dt + pred
+
+    return pred
+
+# %%
+
+
+def rk4(data_in, dt):
+    p1 = data_in
+    k1 = pd.DataFrame(post_model.predict(
+        p1[input_features], batch_size=1024*8), columns=labels)
+    # print(k1)
+    p2 = k1*dt/2+data_in
+    k2 = pd.DataFrame(post_model.predict(
+        p2[input_features], batch_size=1024*8), columns=labels)
+
+    p3 = k2*dt/2 + data_in
+    k3 = pd.DataFrame(post_model.predict(
+        p3[input_features], batch_size=1024*8), columns=labels)
+
+    p4 = k3*dt + data_in
+    k4 = pd.DataFrame(post_model.predict(
+        p4[input_features], batch_size=1024*8), columns=labels)
+
+    model_pred = 1/6*(k1+2*k2+2*k3+k4)
+    pred = data_in + model_pred*dt
+    # print(model_red)
+    return pred
+
+
+def nvAd(data_in, dt, odeAg, st):
+    # st = 10
+    pred = data_in[input_features]
+
+    for i in range(st):
+        pred = odeAg(pred, dt/st)
+
+    return pred, (pred-data_in[input_features])/dt
+
+
 # %%
 
 def dydt(x, t):
-    out = out_scaler.inverse_transform(
-        model.predict(in_scaler.transform(x.reshape(1, -1))))
+    out = post_model.predict(x.reshape(1, -1))
     return out.flatten()
 
 
@@ -121,7 +171,7 @@ def odeInt(data_in, dt):
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
-ini_T = 1601
+ini_T = 1401
 dt = 1e-6
 for n in [2]:
     input_0, test = test_data(ini_T, n, columns, dt)
@@ -129,8 +179,11 @@ for n in [2]:
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    pred, model_pred = adEuler(input_0, dt)
+    # pred, model_pred=adEuler(input_0, dt)
     # pred, model_pred = adRk2(input_0, dt)
+    # pred, model_pred = adRk4(input_0, dt)
+    # pred, model_pred = nvAd(input_0, dt, rk4, 10)
+    pred, model_pred = nvAd(input_0, dt, rk2, 10)
     # pred, model_pred = odeInt(input_0, dt)
 
     test_target = ((test-input_0) / dt)
@@ -150,7 +203,7 @@ for n in [2]:
         # axarr[0].set_title(str(n) + '_' + sp)
 
 #       axarr[1].plot((test[sp] - pred[sp]) / test[sp], 'k')
-        axarr[1].plot((test[sp] - pred[sp])/test[sp].max(), 'k')
+        axarr[1].plot((test[sp] - pred[sp])/test[sp].max(), 'y')
 
 #         axarr[1].set_ylim(-0.005, 0.005)
         # axarr[1].set_title(str(n) + '_' + sp)
