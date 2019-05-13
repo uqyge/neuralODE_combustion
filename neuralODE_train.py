@@ -1,4 +1,3 @@
-
 # %%
 from sklearn.metrics import r2_score
 from tensorflow.keras.callbacks import ModelCheckpoint
