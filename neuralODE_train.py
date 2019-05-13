@@ -1,5 +1,5 @@
 
-#%%
+# %%
 from sklearn.metrics import r2_score
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Dense, Input
@@ -62,20 +62,20 @@ new = new[idx]
 
 # %%
 # idx_f = ((new/org) < 5).all(1)
-idx_f = abs((new[labels]-org[labels]).div(org.dt,axis=0)).max(1)>0.05
+idx_f = abs((new[labels]-org[labels]).div(org.dt, axis=0)).max(1) > 0.05
 print(sum(idx_f))
 old = old[idx_f]
 org = org[idx_f]
 new = new[idx_f]
 
 # %%
+
+
 def read_h5_data(input_features, labels):
     input_df = org[input_features]
     in_scaler = data_scaler()
     input_np = in_scaler.fit_transform(input_df[input_features].values, 'std2')
 
-
-    
     label_df = ((new[labels]-old[labels]).div((org.dt+old.dt), axis=0))
     # label_df = ((new[labels]-org[labels]).div(org.dt, axis=0))
 #     label_df=(new[labels])/org[labels]
@@ -121,9 +121,9 @@ x = Dense(n_neuron, activation='relu')(inputs)
 
 # less then 2 res_block, there will be variance
 x = res_block(x, scale, n_neuron, stage=1, block='a',
-            bn=batch_norm, branches=branches)
+              bn=batch_norm, branches=branches)
 x = res_block(x, scale, n_neuron, stage=1, block='b',
-            bn=batch_norm, branches=branches)
+              bn=batch_norm, branches=branches)
 # x = res_block(x, scale, n_neuron, stage=1, block='c', bn=batch_norm,branches=branches)
 # x = res_block(x, scale, n_neuron, stage=1, block='d', bn=batch_norm,branches=branches)
 # x = res_block(x, scale, n_neuron, stage=1, block='e', bn=batch_norm,branches=branches)
@@ -199,7 +199,7 @@ history = model.fit(
     verbose=2,
     callbacks=callbacks_list2,
     shuffle=False
-    )
+)
 # fit the model
 history = model.fit(
     x_train, y_train,
@@ -209,7 +209,7 @@ history = model.fit(
     verbose=2,
     callbacks=callbacks_list2,
     shuffle=False
-    )
+)
 model.save('base_neuralODE.h5')
 
 # %%

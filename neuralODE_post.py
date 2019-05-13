@@ -1,4 +1,3 @@
-
 # %%
 from scipy.integrate import odeint
 import pickle
@@ -147,25 +146,27 @@ def odeInt(data_in, dt):
     return out, (out-data_in[labels])/dt
 
 
+solvers = {'euler': euler,
+           'midpoint': rk2,
+           'rk4': rk4
+           }
 # %%
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
 ini_T = 1401
 dt = 1e-6
+solver = 'euler'
 for n in [2]:
     input_0, test = test_data(ini_T, n, columns, dt)
 
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    # pred, model_pred = nvAd(input_0, dt, rk4, 10)
-    # pred, model_pred = nvAd(input_0, dt, rk2, 10)
-    pred, model_pred = nvAd(input_0, dt, euler, 10)
+    pred, model_pred = nvAd(input_0, dt, solvers[solver], 10)
     # pred, model_pred = odeInt(input_0, dt)
 
     test_target = ((test-input_0) / dt)
-    # pred, model_pred = test, test_target
 
     testGrad = pd.DataFrame(out_scaler.transform(
         test_target[labels]), columns=labels)
@@ -174,7 +175,7 @@ for n in [2]:
 
     for sp in post_species.intersection(species):
         f, axarr = plt.subplots(1, 3)
-        f.suptitle(str(ini_T) + '_' + sp)
+        f.suptitle('{}: {}, T={}'.format(solver.upper(), sp, ini_T))
 
         axarr[0].plot(test[sp])
         axarr[0].plot(pred[sp], 'rd', ms=2)
@@ -197,5 +198,5 @@ for n in [2]:
 
 #           ax2.plot(no_scaler[sp], 'md', ms=2)
 
-        plt.savefig('fig/' + str(ini_T) + '_' + sp)
+        plt.savefig('fig/' + '{}_{}_{}'.format(solver,ini_T,sp))
         plt.show()

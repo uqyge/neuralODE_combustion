@@ -79,9 +79,23 @@ In this work we adopt a adaptive Euler method.
 ## ODENet work for H2 ingition 
 H2 is burned in air with a give initial temperature. At given interval $dt=1e-7$ the odeNet results are compared with original ODE solution. The ODENet is able to maintain a stable error. 
 
-![H2](fig/1601_H2.png)
-![HO2](fig/1601_HO2.png)
-![OH](fig/1601_OH.png)
+![H2](fig/euler_1401_H2.png)
+![H2](fig/midpoint_1401_H2.png)
+![H2](fig/rk4_1401_H2.png)
+![H2](fig/adaptive_1401_H2.png)
+
+![HO2](fig/euler_1401_HO2.png)
+![HO2](fig/midpoint_1401_HO2.png)
+![HO2](fig/rk4_1401_HO2.png)
+![HO2](fig/adaptive_1401_HO2.png)
+
+![OH](fig/euler_1401_OH.png)
+![OH](fig/midpoint_1401_OH.png)
+![OH](fig/rk4_1401_OH.png)
+![OH](fig/adaptive_1401_OH.png)
+
+It can be seen from the results that ODENet gives a consistent prediction of the chemical concentration. The naive Euler method gives a reasonable result at very low computational cost. The higher order ODE solver yield better accuracy. To balance efficency and cost, adavanced adaptive ode solver can be adopted. 
+
 
 ## conclusion
 Neural ODE network combines neural network with ODE solution. The end results, the dynamic ODENet offers a great tool for reaction ODE modelling in combustion simulations. Unlike ealier attents to apply neural network in combustion simulation, ODENet doesn't require specific optimization for each species[], or extra clusttering step like SOM[]. In the H2 ingition test case, the ODENet has shown a steady control of error tolerance. Thanks to the morden network stucture and GPU accelation. ODENet offers a significat boost in reaciton modelling efficiency in combustion modelling.  
