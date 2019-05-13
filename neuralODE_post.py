@@ -154,6 +154,7 @@ solvers = {'euler': euler,
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
 post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
 
+st = 1
 ini_T = 1401
 dt = 1e-6
 solver = 'euler'
@@ -163,7 +164,7 @@ for n in [2]:
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
 
-    pred, model_pred = nvAd(input_0, dt, solvers[solver], 10)
+    pred, model_pred = nvAd(input_0, dt, solvers[solver], st)
     # pred, model_pred = odeInt(input_0, dt)
 
     test_target = ((test-input_0) / dt)
@@ -198,5 +199,5 @@ for n in [2]:
 
 #           ax2.plot(no_scaler[sp], 'md', ms=2)
 
-        plt.savefig('fig/' + '{}_{}_{}'.format(solver,ini_T,sp))
+        plt.savefig('fig/' + '{}_{}_{}_{}'.format(st, solver, ini_T, sp))
         plt.show()
