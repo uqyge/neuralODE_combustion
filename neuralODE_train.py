@@ -9,6 +9,7 @@ from tensorflow.keras import optimizers
 import os
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -24,48 +25,46 @@ from src.utils import SGDRScheduler
 
 import pickle
 
-# df_load = pd.read_hdf('data/merged.h5')
-df_load = pd.read_hdf('src/central.h5')
 
-df = df_load.astype('float32', copy=True)
-# df=df_load
-print(df.shape)
-# define the labels
-labels = df.columns.drop(['dt', 'f', 'Hs', 'cp'])
-# labels=['HO2']
+# %%
+dataPath = 'src/tmp.h5'
+ddOld = dd.read_hdf(dataPath, key='old')
+ddOrg = dd.read_hdf(dataPath, key='org')
+ddNew = dd.read_hdf(dataPath, key='new')
 
-# input_features=df.columns.drop(['f'])
+idx_dt = (ddOld.dt < 5e-7) & (ddOld.dt > 5e-9)
+ddOld = ddOld[idx_dt]
+ddOrg = ddOrg[idx_dt]
+ddNew = ddNew[idx_dt]
+# ddOld.describe().compute()
+
+idx = (ddOld > 0).all(1) & (ddOrg > 0).all(1) & (ddNew > 0).all(1)
+ddOld = ddOld[idx]
+ddOrg = ddOrg[idx]
+ddNew = ddNew[idx]
+
+labels = ddOld.columns.drop(['dt', 'f', 'Hs', 'cp'])
 input_features = labels
+# idx_f = abs((ddNew[labels]-ddOld[labels]).div(ddOld.dt +
+#                                               ddOrg.dt, axis=0)).max(1) > 1000
+# ddOld = ddOld[idx_f]
+# ddOrg = ddOrg[idx_f]
+# ddNew = ddNew[idx_f]
 
-old = df[0:int(df.shape[0]/3)].reset_index(drop=True)
-org = df[int(df.shape[0]/3):2*int(df.shape[0]/3)].reset_index(drop=True)
-new = df[int(2*df.shape[0]/3):].reset_index(drop=True)
+old = ddOld.compute()
+org = ddOrg.compute()
+new = ddNew.compute()
 
-# org = df[0:int(df.shape[0]/2)].reset_index(drop=True)
-# new = df[int(df.shape[0]/2):].reset_index(drop=True)
-print(org.columns)
-
-# %%
-idx_dt = (org['dt'] < 5e-7) & (org['dt'] > 5e-9)
-print(sum(idx_dt))
-old = old[idx_dt]
-org = org[idx_dt]
-new = new[idx_dt]
-
-# %%
-idx = (org > 0).all(1)
-print(sum(idx))
-old = old[idx]
-org = org[idx]
-new = new[idx]
-
-# %%
-# idx_f = ((new/org) < 5).all(1)
-idx_f = abs((new[labels]-org[labels]).div(org.dt, axis=0)).max(1) > 0.05
-print(sum(idx_f))
-old = old[idx_f]
-org = org[idx_f]
-new = new[idx_f]
+# logLab=['HO2','H2O2','O','OH','H2O','H']
+# old[logLab] = np.log(old[logLab])
+# org[logLab] = np.log(org[logLab])
+# new[logLab] = np.log(new[logLab])
+# old = old/old.max()
+# org = org/org.max()
+# new = new/new.max()
+# old = np.cbrt(old)
+# org = np.cbrt(org)
+# new = np.cbrt(new)
 
 # %%
 
@@ -92,11 +91,11 @@ x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
     x_input, y_label, test_size=0.5)
-pickle.dump((org, new, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
+pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
 print('set up ANN')
-strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0"])
+# strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0"])
 # with strategy.scope():
 n_neuron = 10
 scale = 3
@@ -135,26 +134,13 @@ predictions = Dense(dim_label, activation='linear', name='output_1')(x)
 
 baseModel = Model(inputs=inputs, outputs=predictions)
 
-# out=Dense(len(out_m), trainable=False, activation='linear',
-#           weights=[(out_s)*np.identity(len(out_m)),out_m] )(predictions)
-
-# baseModel = Model(inputs=inputs, outputs=out)
-
-
-# y=Dense(len(in_m), trainable=True,
-#         weights=[(1/in_s)*np.identity(len(in_m)),-(in_m/in_s)])(inputs)
-# y=baseModel(y)
-# out=Dense(len(out_m), trainable=True,
-#           weights=[(out_s)*np.identity(len(out_m)),out_m] )(y)
-# model = Model(inputs=inputs,outputs=out)
-
 model = baseModel
 model.summary()
 loss_type = 'mse'
 model.compile(loss=loss_type, optimizer='adam', metrics=['accuracy'])
 
 # %%
-batch_size = 1024*8
+batch_size = 1024*8*8
 epochs = 400
 vsplit = 0.1
 # model.compile(loss=loss_type, optimizer='adam', metrics=[coeff_r2])
@@ -176,7 +162,7 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
-for i in range(9):
+for i in range(7):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
@@ -196,8 +182,8 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list2,
-    shuffle=False
+    callbacks=callbacks_list1,
+    shuffle=True
 )
 # fit the model
 history = model.fit(
@@ -212,7 +198,7 @@ history = model.fit(
 model.save('base_neuralODE.h5')
 
 # %%
-predict_val = model.predict(x_test, batch_size=1024*32)
+predict_val = model.predict(x_test, batch_size=1024*8*8*4)
 predict_df = pd.DataFrame(
     out_scaler.inverse_transform(predict_val), columns=labels)
 r2 = r2_score(predict_val, y_test)
@@ -229,3 +215,13 @@ for sp in labels:
     plt.title('{} r2 ={}'.format(sp, r2_score(pred_df[sp], test_df[sp])))
     plt.savefig('fig/{}_r2'.format(sp))
     plt.show()
+
+# %%
+sp = 'H2O2'
+# grd = (np.log(new)-np.log(old)).div(old.dt+org.dt,axis=0)
+grd = (new-old).div(old.dt+org.dt, axis=0)
+# grd = new/old
+plt.hist(grd[sp], bins=20)
+plt.show()
+
+# %%

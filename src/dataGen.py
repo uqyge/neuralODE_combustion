@@ -44,7 +44,7 @@ def ignite_f(ini):
 
     t_end = 1e-3
 
-    dt_dict = [1e-8]
+    dt_dict = [1e-7]
     for dt in dt_dict:
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
@@ -94,7 +94,7 @@ def ignite_f(ini):
             # train_new.append(state_new)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
-            if ((res.max() < 1e-2 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
+            if ((res.max() < 1e3 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
                 # if res.max() < 1e-5:
                 break
         train_old = tmp[:len(tmp)-2]
@@ -105,6 +105,7 @@ def ignite_f(ini):
 
 
 def dataGeneration():
+
     T = np.random.rand(20) * 1200 + 1001
 
     # n_s = np.random.rand(30) * 30 + 0.1
@@ -135,6 +136,7 @@ def dataGeneration():
     new = np.concatenate([x[2] for x in a])
 
     gas = ct.Solution('../data/h2_sandiego.cti')
+    # gas = ct.Solution('../data/grimech12.cti')
     columnNames = gas.species_names
     columnNames = columnNames + ['Hs']
     columnNames = columnNames + ['T']
@@ -147,12 +149,15 @@ def dataGeneration():
     train_org = pd.DataFrame(data=org, columns=columnNames)
     train_new = pd.DataFrame(data=new, columns=columnNames)
 
-    df = pd.concat([train_old, train_org, train_new])
-    key = 'all_the_things'
-    ddf = dd.from_pandas(df, npartitions=100)
+    # df = pd.concat([train_old, train_org, train_new])
+    # key = 'all_the_things'
+    # df.to_hdf('central_1e-8.h5', key, complib='zlib', complevel=0)
+
     s = time.time()
-    df.to_hdf('central_1e-8.h5', key, complib='zlib', complevel=0)
-    # ddf.to_hdf('test.h5', '/test')
+    train_old.to_hdf('tmp.h5', key='old', format='table')
+    train_org.to_hdf('tmp.h5', key='org', format='table')
+    train_new.to_hdf('tmp.h5', key='new', format='table')
+
     e = time.time()
     print('saving takes {}s'.format(e-s))
 
@@ -215,7 +220,7 @@ def ignite_post(ini):
             train_new.append(state_new)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
-            if ((res.max() < 1e-3 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
+            if ((res.max() < 1e3 and (solver.t / dt) > 50)) or (gas['H2'].X < 0.005 or gas['H2'].X > 0.995):
                 # if res.max() < 1e-5:
                 break
 
@@ -233,7 +238,7 @@ def test_data(temp, n_fuel, columns, dt):
     ode_n = pd.DataFrame(data=ode_n,
                          columns=columns)
 
-    idx_test = (ode_o > 1e-9).all(1)
+    idx_test = (ode_o > 0).all(1)
     ode_o = ode_o[idx_test]
     ode_n = ode_n[idx_test]
 

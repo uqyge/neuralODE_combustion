@@ -8,10 +8,10 @@ from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
 from src.dataGen import test_data
 
-org, _, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
-columns = org.columns
-species = org.columns
-labels = org.columns.drop(['dt', 'f', 'Hs', 'cp'])
+columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
+# columns = org.columns
+species = columns
+labels = columns.drop(['dt', 'f', 'Hs', 'cp'])
 input_features = labels
 
 # %%
@@ -49,10 +49,10 @@ post_model.add(model_inv)
 
 
 # %%
-post_model.predict(org[labels].iloc[0:1])
+# post_model.predict(org[labels].iloc[0:1])
 
-out_scaler.inverse_transform(model_neuralODE.predict(
-    in_scaler.transform(org[labels].iloc[0:1])))
+# out_scaler.inverse_transform(model_neuralODE.predict(
+#     in_scaler.transform(org[labels].iloc[0:1])))
 
 
 # %%
@@ -63,10 +63,10 @@ def euler(data_in, dt):
     pred = data_in[input_features]
 
     #     print(i)
-    # model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
-    #     in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
-    model_pred = pd.DataFrame(post_model.predict(
-        pred, batch_size=1024*8), columns=labels)
+    model_pred = pd.DataFrame(out_scaler.inverse_transform(model_neuralODE.predict(
+        in_scaler.transform(pred), batch_size=1024*8)), columns=labels)
+    # model_pred = pd.DataFrame(post_model.predict(
+    #     pred, batch_size=1024*8), columns=labels)
 
     pred = (model_pred)*dt + pred
 
@@ -108,6 +108,7 @@ def rk4(data_in, dt):
 
     model_pred = 1/6*(k1+2*k2+2*k3+k4)
     pred = data_in + model_pred*dt
+    # pred = pred.clip(0)
     # print(model_red)
     return pred
 
@@ -119,13 +120,18 @@ def nvAd(data_in, dt, odeAg, st):
     for i in range(st):
         pred = odeAg(pred, dt/st)
 
+    # pred = pred.clip(0)
+
     return pred, (pred-data_in[input_features])/dt
 
 
 # %%
 
 def dydt(x, t):
-    out = post_model.predict(x.reshape(1, -1))
+    out = out_scaler.inverse_transform(model_neuralODE.predict(
+        in_scaler.transform(x.reshape(1, -1)), batch_size=1024*8))
+    # out = post_model.predict(x.reshape(1, -1))
+
     return out.flatten()
 
 
@@ -152,22 +158,39 @@ solvers = {'euler': euler,
            }
 # %%
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
-post_species = pd.Index(['HO2', 'OH', 'H2O2', 'H2'])
-
+# post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
+post_species = pd.Index(['T'])
+# post_species = labels
+plt.rcParams['figure.figsize'] = [15, 5]
 st = 1
 ini_T = 1401
-dt = 1e-6
-solver = 'euler'
-for n in [2]:
+dt = 1e-7
+solver = 'rk4'
+for n in [1]:
     input_0, test = test_data(ini_T, n, columns, dt)
 
     input_0 = input_0.reset_index(drop=True)
     test = test.reset_index(drop=True)
+    print(test.shape)
+    # logLab=['HO2','H2O2']
+    # logLab=['HO2','H2O2','O','OH','H2O','H']
+    # input_0[logLab] = np.log(input_0[logLab])
+    # test[logLab] = np.log(test[logLab])
+    # input_0 = np.cbrt(input_0)
+    # test = np.cbrt(test)
 
+    test = test.astype('float32')
+    # input_0 = input_0.iloc[:100]
+    # test = test.iloc[:100]
+    s = 1
+    e = -1
+    input_0 = input_0.iloc[s:e].reset_index(drop=True)
+    test = test.iloc[s:e].reset_index(drop=True)
+    print(test.shape)
     pred, model_pred = nvAd(input_0, dt, solvers[solver], st)
     # pred, model_pred = odeInt(input_0, dt)
 
-    test_target = ((test-input_0) / dt)
+    test_target = ((test[labels]-input_0[labels]) / dt)
 
     testGrad = pd.DataFrame(out_scaler.transform(
         test_target[labels]), columns=labels)
@@ -182,22 +205,43 @@ for n in [2]:
         axarr[0].plot(pred[sp], 'rd', ms=2)
         # axarr[0].set_title(str(n) + '_' + sp)
 
-#       axarr[1].plot((test[sp] - pred[sp]) / test[sp], 'k')
-        axarr[1].plot((test[sp] - pred[sp])/test[sp].max(), 'y')
+        axarr[1].plot(abs(test[sp] - pred[sp]) / test[sp], 'yd', ms=2)
+        # axarr[1].plot((test[sp] - pred[sp])/test[sp].max(), 'yd', ms=2)
 
-#         axarr[1].set_ylim(-0.005, 0.005)
+    #         axarr[1].set_ylim(-0.005, 0.005)
         # axarr[1].set_title(str(n) + '_' + sp)
 
-        # ax2 = axarr[1].twinx()
-        # ax2.plot(test_target[sp], 'bd', ms=2)
-        # # ax2.plot(model_pred[sp], 'rd', ms=2)
-#       ax2.set_ylim(-0.0015,0.0015)
+        ax2 = axarr[1].twinx()
+        ax2.plot(test_target[sp], 'bd', ms=2)
+        ax2.plot(model_pred[sp], 'rd', ms=2)
+        # ax2.set_ylim(-0.0015, 0.0015)
 
         axarr[2].plot(testGrad[sp], 'bd', ms=2)
         axarr[2].plot(trGrad[sp], 'rd', ms=2)
-#       axarr[2].set_ylim(-0.1,0.)
+        # axarr[2].set_ylim(-1,1)
 
-#           ax2.plot(no_scaler[sp], 'md', ms=2)
+    #           ax2.plot(no_scaler[sp], 'md', ms=2)
 
         plt.savefig('fig/' + '{}_{}_{}_{}'.format(st, solver, ini_T, sp))
         plt.show()
+
+
+# %%
+
+def integration():
+    t = np.linspace(0, 2e-4, 2000)
+    out = odeint(dydt, input_0[labels].iloc[0:1].values[0], t)
+    out = pd.DataFrame(out, columns=labels)
+    out['t'] = t
+    return out
+
+
+acc = integration()
+# %%
+test['t'] = np.linspace(0, (test.shape[0]-1)*dt, test.shape[0])
+sp = 'T'
+plt.plot(acc['t'], acc[sp], 'rd', ms=2)
+plt.plot(test['t'], input_0[sp], 'b')
+plt.title('{},T={}'.format(sp,ini_T))
+plt.show()
+# %%

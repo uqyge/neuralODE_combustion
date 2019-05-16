@@ -1,4 +1,4 @@
-# Neural ODE for combustion modelling
+# Neural ODE for combustion reaction modelling
 ## Abstract
 
 ## 1. Neural network for reaction modelling in combustion
