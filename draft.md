@@ -102,7 +102,32 @@ r2 shows that the learning is successful.
 ![H2O](fig/H2O_r2.png)
 
 
-## 4. Model validation: H2 ingition under constant pressure 
+## 4.Result
+### 4.1 Stiffness in combustion modelling
+combustion ODE system often has stiffness. It poses a great efficency challenge. 
+
+Taking modelling of flame propagation as an example. We learned about this example from Larry Shampine, one of the authors of the MATLAB ODE suite. When you light a match, the ball of flame grows rapidly until it reaches a critical size. Then it remains at that size because the amount of oxygen being consumed by the combustion in the interior of the ball balances the amount available through the surface. The simple model is
+$dy/dt = y^2 + y^3$
+$y_0=\delta$
+$0< t < 2/\delta$
+The scalar variable $y(t)$,y(t) represents the radius of the ball. The $y2$ and $y3$ terms come from the surface area and the volume. The critical parameter is the initial radius, $\delta$, which is "small." We seek the solution over a length of time that is inversely proportional to $\delta$.
+
+Here we set $\delta =0.01$. When explicity RK45 solver is chosen, after $t=1/\delta$, the gradient changes rapidly.
+
+![gradient rk](fig/flame_gradient_RK45.png)
+![gradient bdf](fig/flame_gradient_BDF.png)
+
+To comply with the relative tolerence, the solver needs to iterate over very small step resulting more iteration. In contrast, the more complex implicit method can take larger time step. 
+![rk45](fig/flame_RK45.png)
+![bdf](fig/flame_BDF.png)
+
+When preparing the training data for the neural ODE, we can accumulate the gradient with the implicit solver and thus the ODENet won't have the inherent stiffness that comes from the ODE. In the end, we can have a stable ODE net that consist of computational efficent explicit method. The ode Net results shows that it can combine the advatages of both explicit and implicit solver. To achieve the same accuracy tolerence, it can use large time without implicit expensive iterative update.
+
+![ODE Net](fig/flame_ODENet.png)
+
+
+
+### 4.2 Model validation: H2 ingition under constant pressure 
 H2 is burned in air with a give initial temperature under atmosphere pressure.This validation setup has a clear numerical formulation. The H2 chemistry is represented with the sandiego mechanism coupled with ideal gas equation of state. H2 chemistry is chosen because its non stiff, so the selected ODE solvers are applicable. Besides, H2 combustion reactions are vary fast with strong gradient changes, which poses great challenges for the base network block. 
 
 
