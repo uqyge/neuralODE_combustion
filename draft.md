@@ -106,7 +106,7 @@ r2 shows that the learning is successful.
 ### 4.1 Stiffness in combustion modelling
 combustion ODE system often has stiffness. It poses a great efficency challenge. 
 
-Taking modelling of flame propagation as an example. We learned about this example from Larry Shampine, one of the authors of the MATLAB ODE suite. When you light a match, the ball of flame grows rapidly until it reaches a critical size. Then it remains at that size because the amount of oxygen being consumed by the combustion in the interior of the ball balances the amount available through the surface. The simple model is
+Taking modelling of flame propagation as an example. When you light a match, the ball of flame grows rapidly until it reaches a critical size. Then it remains at that size because the amount of oxygen being consumed by the combustion in the interior of the ball balances the amount available through the surface. The simple model is
 $dy/dt = y^2 + y^3$
 $y_0=\delta$
 $0< t < 2/\delta$
@@ -172,6 +172,12 @@ Changin from the first oder euler method to second oder midpoint method, there a
 ![OH](fig/adaptive_1401_OH.png)
 
 It can be seen from the results that ODENet gives a consistent prediction of the chemical concentration. The naive Euler method gives a reasonable result at very low computational cost. The higher order ODE solver yield better accuracy. To balance efficency and cost, adavanced adaptive ode solver can be adopted. 
+### 4.3 Test for integration
+
+The ODE Net is designed to be used in for integration. Here we give it a initial value and let the network to perform the whole integration for the combustion process. The results are compared with the BDF implicit solver. The good agreement is achieved as expected. 
+![H2](fig/integration_H2.png)
+![HO2](fig/integration_H2.png)
+![OH](fig/integration_H2.png)
 
 
 ## 5. Conclusion

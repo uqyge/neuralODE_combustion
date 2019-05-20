@@ -238,9 +238,12 @@ acc = integration()
 # %%
 test['t'] = np.linspace(0, (test.shape[0] - 1) * dt, test.shape[0])
 sp = 'OH'
-for sp in labels:
+# for sp in labels:
+for sp in post_species.intersection(species):
     plt.plot(acc['t'], acc[sp], 'rd', ms=2)
     plt.plot(test['t'], input_0[sp], 'b')
     plt.title('{},T={}'.format(sp, ini_T))
+    plt.xlim(0,0.0001)
+    plt.savefig('fig/integration_{}'.format(sp))
     plt.show()
 # %%
