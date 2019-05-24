@@ -90,7 +90,11 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
+<<<<<<< HEAD
     x_input, y_label, test_size=0.1)
+=======
+    x_input, y_label, test_size=0.02)
+>>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
@@ -162,13 +166,17 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
+<<<<<<< HEAD
 for i in range(10):
+=======
+for i in range(8):
+>>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
-schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
+schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-5,
                          steps_per_epoch=np.ceil(epoch_size/batch_size),
-                         cycle_length=c_len, lr_decay=0.9, mult_factor=2)
+                         cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
 callbacks_list1 = [checkpoint]
 callbacks_list2 = [checkpoint, schedule]

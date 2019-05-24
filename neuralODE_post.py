@@ -157,15 +157,20 @@ def odeInt(data_in, dt):
 solvers = {'euler': euler, 'midpoint': rk2, 'rk4': rk4}
 # %%
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
-# post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
-post_species = pd.Index(['T'])
-# post_species = labels
+post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
+# post_species = pd.Index(['T'])
+# post_species = labels 
 plt.rcParams['figure.figsize'] = [15, 5]
+<<<<<<< HEAD
 st = 1
 ini_T = 1401
+=======
+st = 10
+ini_T = 1601
+>>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
 dt = 1e-6
 solver = 'rk4'
-for n in [1]:
+for n in [2]:
     input_0, test = test_data(ini_T, n, columns, dt)
 
     input_0 = input_0.reset_index(drop=True)
@@ -204,8 +209,8 @@ for n in [1]:
         axarr[0].plot(pred[sp], 'rd', ms=2)
         # axarr[0].set_title(str(n) + '_' + sp)
 
-        axarr[1].plot(abs(test[sp] - pred[sp]) / test[sp], 'yd', ms=2)
-        # axarr[1].plot((test[sp] - pred[sp])/test[sp].max(), 'yd', ms=2)
+        # axarr[1].plot(abs(test[sp] - pred[sp]) / test[sp], 'yd', ms=2)
+        axarr[1].plot((test[sp] - pred[sp]) / test[sp].max(), 'yd', ms=2)
 
         #         axarr[1].set_ylim(-0.005, 0.005)
         # axarr[1].set_title(str(n) + '_' + sp)
@@ -236,6 +241,7 @@ def integration():
 
 
 acc = integration()
+<<<<<<< HEAD
 #%%
 test['t'] = np.linspace(0, (test.shape[0] - 1) * dt, test.shape[0])
 sp = 'T'
@@ -243,4 +249,17 @@ plt.plot(acc['t'], acc[sp], 'rd', ms=2)
 plt.plot(test['t'], input_0[sp], 'b')
 plt.title('{},T={}'.format(sp, ini_T))
 plt.show()
+=======
+# %%
+test['t'] = np.linspace(0, (test.shape[0] - 1) * dt, test.shape[0])
+sp = 'OH'
+# for sp in labels:
+for sp in post_species.intersection(species):
+    plt.plot(acc['t'], acc[sp], 'rd', ms=2)
+    plt.plot(test['t'], input_0[sp], 'b')
+    plt.title('{},T={}'.format(sp, ini_T))
+    plt.xlim(0,0.0001)
+    plt.savefig('fig/integration_{}'.format(sp))
+    plt.show()
+>>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
 # %%
