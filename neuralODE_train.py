@@ -90,14 +90,14 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.5)
+    x_input, y_label, test_size=0.1)
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
 print('set up ANN')
 # strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0"])
 # with strategy.scope():
-n_neuron = 10
+n_neuron = 100
 scale = 3
 branches = 3
 
@@ -128,7 +128,7 @@ x = res_block(x, scale, n_neuron, stage=1, block='b',
 # x = res_block(x, scale, n_neuron, stage=1, block='f', bn=batch_norm,branches=branches)
 
 
-x = Dense(100, activation='relu')(x)
+x = Dense(200, activation='relu')(x)
 # x = Dropout(0.1)(x)
 predictions = Dense(dim_label, activation='linear', name='output_1')(x)
 
@@ -162,7 +162,7 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
-for i in range(7):
+for i in range(10):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
@@ -182,17 +182,17 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list1,
+    callbacks=callbacks_list2,
     shuffle=True
 )
 # fit the model
 history = model.fit(
     x_train, y_train,
-    epochs=epochs,
+    epochs=int(epochs/2),
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list2,
+    callbacks=callbacks_list1,
     shuffle=False
 )
 model.save('base_neuralODE.h5')
