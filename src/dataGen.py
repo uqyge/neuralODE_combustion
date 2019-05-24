@@ -115,7 +115,7 @@ def ignite_f(ini):
 
 def dataGeneration():
 
-    T = np.random.rand(2) * 1200 + 1001
+    T = np.random.rand(20) * 1200 + 1001
 
     # n_s = np.random.rand(30) * 30 + 0.1
     # n_l = np.random.rand(30) * 30

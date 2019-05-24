@@ -37,14 +37,15 @@ ddOld = ddOld[idx_dt]
 ddOrg = ddOrg[idx_dt]
 ddNew = ddNew[idx_dt]
 # ddOld.describe().compute()
+#%%
+labels = ddOld.columns.drop(['AR','dt', 'f', 'Hs', 'cp'])
+input_features = labels
 
-idx = (ddOld > 0).all(1) & (ddOrg > 0).all(1) & (ddNew > 0).all(1)
+idx = (ddOld[labels] > 0).all(1) & (ddOrg[labels] > 0).all(1) & (ddNew[labels] > 0).all(1)
 ddOld = ddOld[idx]
 ddOrg = ddOrg[idx]
 ddNew = ddNew[idx]
-
-labels = ddOld.columns.drop(['dt', 'f', 'Hs', 'cp'])
-input_features = labels
+#%%
 # idx_f = abs((ddNew[labels]-ddOld[labels]).div(ddOld.dt +
 #                                               ddOrg.dt, axis=0)).max(1) > 1000
 # ddOld = ddOld[idx_f]
@@ -90,11 +91,7 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-<<<<<<< HEAD
     x_input, y_label, test_size=0.1)
-=======
-    x_input, y_label, test_size=0.02)
->>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
@@ -132,7 +129,7 @@ x = res_block(x, scale, n_neuron, stage=1, block='b',
 # x = res_block(x, scale, n_neuron, stage=1, block='f', bn=batch_norm,branches=branches)
 
 
-x = Dense(200, activation='relu')(x)
+x = Dense(100, activation='relu')(x)
 # x = Dropout(0.1)(x)
 predictions = Dense(dim_label, activation='linear', name='output_1')(x)
 
@@ -166,11 +163,7 @@ epoch_size = x_train.shape[0]
 a = 0
 base = 2
 clc = 2
-<<<<<<< HEAD
-for i in range(10):
-=======
-for i in range(8):
->>>>>>> 44dbb3e7485e84a900362544f5022d781b5194ed
+for i in range(7):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
