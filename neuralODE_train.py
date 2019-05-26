@@ -167,7 +167,7 @@ for i in range(7):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
-schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-5,
+schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
                          steps_per_epoch=np.ceil(epoch_size/batch_size),
                          cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
@@ -183,7 +183,7 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list2,
+    callbacks=callbacks_list1,
     shuffle=True
 )
 # fit the model
