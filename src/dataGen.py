@@ -186,7 +186,9 @@ def ignite_post(ini):
     for dt in dt_dict:
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
-            gas = ct.Solution('./data/h2_sandiego.cti')
+            # gas = ct.Solution('./data/h2_sandiego.cti')
+            gas = ct.Solution('./data/connaire.cti')
+
         if fuel == 'CH4':
             gas = ct.Solution('./data/grimech12.cti')
             # gas = ct.Solution('gri30.xml')
@@ -253,9 +255,9 @@ def test_data(temp, n_fuel, columns, dt):
     ode_o = pd.DataFrame(data=ode_o, columns=columns)
     ode_n = pd.DataFrame(data=ode_n, columns=columns)
 
-    idx_test = (ode_o > 0).all(1)
-    ode_o = ode_o[idx_test]
-    ode_n = ode_n[idx_test]
+    # idx_test = (ode_o > 0).all(1)
+    # ode_o = ode_o[idx_test]
+    # ode_n = ode_n[idx_test]
 
     return ode_o, ode_n
 
