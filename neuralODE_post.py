@@ -10,9 +10,8 @@ from src.dataGen import test_data
 
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 # columns = org.columns
-columns = columns.drop('AR')
 species = columns
-labels = columns.drop(['dt', 'f', 'Hs', 'cp'])
+labels = columns.drop(['AR','dt', 'f', 'Hs', 'cp'])
 input_features = labels
 
 # %%
@@ -46,7 +45,7 @@ post_model = Sequential()
 post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
-
+post_model.save('postODENet.h5')
 # %%
 # post_model.predict(org[labels].iloc[0:1])
 
@@ -54,8 +53,6 @@ post_model.add(model_inv)
 #     in_scaler.transform(org[labels].iloc[0:1])))
 
 # %%
-
-
 def euler(data_in, dt):
 
     pred = data_in[input_features]

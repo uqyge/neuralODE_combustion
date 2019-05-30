@@ -1,21 +1,20 @@
 # %%
-from sklearn.metrics import r2_score
-from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.models import Model, Sequential
-import tensorflow as tf
-from tensorflow.keras import optimizers
-
 import os
 import numpy as np
 import pandas as pd
 import dask.dataframe as dd
 import matplotlib.pyplot as plt
+import pickle
 
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
 
+import tensorflow as tf
 import tensorflow.keras
-from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras import optimizers
 from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.callbacks import ModelCheckpoint
 
@@ -23,7 +22,7 @@ from src.dataScaling import data_scaler
 from src.res_block import res_block
 from src.utils import SGDRScheduler
 
-import pickle
+
 
 
 # %%
@@ -91,7 +90,7 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.1)
+    x_input, y_label, test_size=0.05)
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
@@ -140,6 +139,7 @@ model.summary()
 loss_type = 'mse'
 model.compile(loss=loss_type, optimizer='adam', metrics=['accuracy'])
 
+
 # %%
 batch_size = 1024*8*8
 epochs = 400
@@ -167,7 +167,7 @@ for i in range(7):
     a += base*clc**(i)
 print(a)
 epochs, c_len = a, base
-schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
+schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-4,
                          steps_per_epoch=np.ceil(epoch_size/batch_size),
                          cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
@@ -183,7 +183,7 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list1,
+    callbacks=callbacks_list2,
     shuffle=True
 )
 # fit the model
