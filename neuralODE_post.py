@@ -10,6 +10,7 @@ from src.dataGen import test_data
 
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 # columns = org.columns
+columns = columns.drop('AR')
 species = columns
 labels = columns.drop(['dt', 'f', 'Hs', 'cp'])
 input_features = labels
@@ -158,7 +159,7 @@ solvers = {'euler': euler, 'midpoint': rk2, 'rk4': rk4}
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
 post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
 # post_species = pd.Index(['T'])
-# post_species = labels 
+# post_species = labels
 plt.rcParams['figure.figsize'] = [15, 5]
 st = 1
 ini_T = 1401
