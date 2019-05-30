@@ -45,7 +45,7 @@ post_model = Sequential()
 post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
-
+post_model.save('postODENet.h5')
 # %%
 # post_model.predict(org[labels].iloc[0:1])
 
@@ -240,4 +240,6 @@ plt.plot(acc['t'], acc[sp], 'rd', ms=2)
 plt.plot(test['t'], input_0[sp], 'b')
 plt.title('{},T={}'.format(sp, ini_T))
 plt.show()
+
+
 
