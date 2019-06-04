@@ -37,7 +37,8 @@ ddOrg = ddOrg[idx_dt]
 ddNew = ddNew[idx_dt]
 # ddOld.describe().compute()
 #%%
-labels = ddOld.columns.drop(['AR','dt', 'f', 'Hs', 'cp'])
+# labels = ddOld.columns.drop(['AR','dt', 'f', 'cp','Hs'])
+labels = ddOld.columns.drop(['AR','dt', 'f', 'cp'])
 input_features = labels
 
 idx = (ddOld[labels] > 0).all(1) & (ddOrg[labels] > 0).all(1) & (ddNew[labels] > 0).all(1)
@@ -174,7 +175,7 @@ schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-4,
 callbacks_list1 = [checkpoint]
 callbacks_list2 = [checkpoint, schedule]
 
-# model.load_weights(filepath)
+model.load_weights(filepath)
 
 # fit the model
 history = model.fit(
@@ -183,7 +184,7 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list2,
+    callbacks=callbacks_list1,
     shuffle=True
 )
 # fit the model
@@ -193,7 +194,7 @@ history = model.fit(
     batch_size=batch_size,
     validation_split=vsplit,
     verbose=2,
-    callbacks=callbacks_list1,
+    callbacks=callbacks_list2,
     shuffle=False
 )
 model.save('base_neuralODE.h5')
