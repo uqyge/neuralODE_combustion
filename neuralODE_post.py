@@ -11,7 +11,7 @@ from src.dataGen import test_data
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 # columns = org.columns
 species = columns
-labels = columns.drop(['AR','dt', 'f', 'Hs', 'cp'])
+labels = columns.drop(['AR', 'dt', 'f', 'cp'])
 input_features = labels
 
 # %%
@@ -46,11 +46,13 @@ post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
 post_model.save('postODENet.h5')
+
 # %%
 # post_model.predict(org[labels].iloc[0:1])
 
 # out_scaler.inverse_transform(model_neuralODE.predict(
 #     in_scaler.transform(org[labels].iloc[0:1])))
+
 
 # %%
 def euler(data_in, dt):
@@ -241,3 +243,75 @@ plt.plot(test['t'], input_0[sp], 'b')
 plt.title('{},T={}'.format(sp, ini_T))
 plt.show()
 # %%
+import tensorflow.keras as keras
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.utils import plot_model
+
+dim_input = len(labels)
+
+din = Input(shape=(dim_input, ), name='input_y')
+dt = Input(shape=(1, ), name='input_dt')
+
+p1 = din
+k1 = post_model(p1)
+
+mul2 = keras.layers.multiply([k1, keras.layers.Lambda(lambda x: x * 0.5)(dt)])
+p2 = keras.layers.add([mul2, p1])
+
+# p2 = mul+p1
+# p2 = k1 * keras.layers.Lambda(lambda x: x * 0.5)(dt) + p1
+# p2 = k1 * dt / 2 + din
+k2 = post_model(p2)
+
+p3 = k2 * dt / 2 + din
+k3 = post_model(p3)
+
+p4 = k3 * dt + din
+k4 = post_model(p4)
+
+out = 1 / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+# rk4Model = Model(inputs=din, outputs=k1)
+rk4Model = Model(inputs=[din, dt], outputs=k2)
+rk4Model.summary()
+
+plot_model(rk4Model, to_file="wudi.png")
+rk4Model.save('wudi.h5')
+
+#%%
+import tensorflow.keras as keras
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.utils import plot_model
+
+dim_input = len(labels)
+
+din = Input(shape=(dim_input, ), name='input_y')
+dt = Input(shape=(1, ), name='input_dt')
+
+p1 = din
+k1 = post_model(p1)
+
+mul2 = keras.layers.multiply([k1, keras.layers.Lambda(lambda x: x * 0.5)(dt)])
+p2 = keras.layers.add([mul2, p1])
+k2 = post_model(p2)
+
+mul3 = keras.layers.multiply([k2, keras.layers.Lambda(lambda x: x * 0.5)(dt)])
+p3 = keras.layers.add([mul3, p1])
+k3 = post_model(p3)
+
+mul4 = keras.layers.multiply([k3, dt])
+p4 = keras.layers.add([mul4, p1])
+k4 = post_model(p4)
+
+out1 = keras.layers.Lambda(lambda x: x * 1 / 6)(k1)
+out2 = keras.layers.Lambda(lambda x: x * 1 / 3)(k2)
+out3 = keras.layers.Lambda(lambda x: x * 1 / 3)(k3)
+out4 = keras.layers.Lambda(lambda x: x * 1 / 6)(k4)
+out = keras.layers.add([out1, out2, out3, out4])
+
+rk4Model = Model(inputs=[din, dt], outputs=out)
+rk4Model.summary()
+
+plot_model(rk4Model, to_file="wudi.png")
+rk4Model.save('rk4Model.h5')
