@@ -15,10 +15,12 @@
 ![res34](./img/res34.png)
 ![inception](./img/inception.png)
 - **Neural ODE**
+
 ![odeP](./img/odePaper.png)
 
 - **Runge kutta network**
-**RK45**
+
+**Runge kutta 4th order method**
 
 $k_1=hf(x_n,y_n)$
 
@@ -29,6 +31,7 @@ $k_3=hf(x_n+h/2,y_n+k_2/2)$
 $k_4=hf(x_n+h,y_n+k_3)$
 
 $y_{n+1}=y_n+1/6(k_1 + 2k_2+2k_3+k4)$
+
 
 **RK45Network**
 ![rk4Model](./img/rk4Model.png)
