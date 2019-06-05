@@ -22,16 +22,7 @@
 
 **Runge kutta 4th order method**
 
-$k_1=hf(x_n,y_n)$
-
-$k_2=hf(x_n+h/2,y_n+k_1/2)$
-
-$k_3=hf(x_n+h/2,y_n+k_2/2)$
-
-$k_4=hf(x_n+h,y_n+k_3)$
-
-$y_{n+1}=y_n+1/6(k_1 + 2k_2+2k_3+k4)$
-
+![rk4eq](./img/rk4eq.png)
 
 **RK45Network**
 ![rk4Model](./img/rk4Model.png)
