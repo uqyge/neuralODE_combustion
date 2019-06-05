@@ -91,14 +91,14 @@ def read_h5_data(input_features, labels):
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
 x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.05)
+    x_input, y_label, test_size=0.5)
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 # %%
 print('set up ANN')
 # strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0"])
 # with strategy.scope():
-n_neuron = 100
+n_neuron = 10
 scale = 3
 branches = 3
 
@@ -172,10 +172,10 @@ schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-4,
                          steps_per_epoch=np.ceil(epoch_size/batch_size),
                          cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
-callbacks_list1 = [checkpoint]
+callbacks_list1 = [checkpoint,tensorflow.keras.callbacks.TensorBoard('./tb')]
 callbacks_list2 = [checkpoint, schedule]
 
-model.load_weights(filepath)
+# model.load_weights(filepath)
 
 # fit the model
 history = model.fit(
@@ -188,15 +188,15 @@ history = model.fit(
     shuffle=True
 )
 # fit the model
-history = model.fit(
-    x_train, y_train,
-    epochs=int(epochs/2),
-    batch_size=batch_size,
-    validation_split=vsplit,
-    verbose=2,
-    callbacks=callbacks_list2,
-    shuffle=False
-)
+# history = model.fit(
+#     x_train, y_train,
+#     epochs=int(epochs/2),
+#     batch_size=batch_size,
+#     validation_split=vsplit,
+#     verbose=2,
+#     callbacks=callbacks_list2,
+#     shuffle=False
+# )
 model.save('base_neuralODE.h5')
 
 # %%

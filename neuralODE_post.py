@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
 from src.dataGen import test_data
@@ -11,7 +12,7 @@ from src.dataGen import test_data
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 # columns = org.columns
 species = columns
-labels = columns.drop(['AR','dt', 'f', 'Hs', 'cp'])
+labels = columns.drop(['AR', 'dt', 'f', 'cp'])
 input_features = labels
 
 # %%
@@ -46,11 +47,13 @@ post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
 post_model.save('postODENet.h5')
+
 # %%
 # post_model.predict(org[labels].iloc[0:1])
 
 # out_scaler.inverse_transform(model_neuralODE.predict(
 #     in_scaler.transform(org[labels].iloc[0:1])))
+
 
 # %%
 def euler(data_in, dt):
@@ -156,7 +159,7 @@ solvers = {'euler': euler, 'midpoint': rk2, 'rk4': rk4}
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
 post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
 # post_species = pd.Index(['T'])
-# post_species = labels 
+# post_species = labels
 plt.rcParams['figure.figsize'] = [15, 5]
 st = 1
 ini_T = 1401
@@ -241,5 +244,33 @@ plt.plot(test['t'], input_0[sp], 'b')
 plt.title('{},T={}'.format(sp, ini_T))
 plt.show()
 
+#%%
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.utils import plot_model
 
+dim_input = input_0[labels].shape[1]
 
+din = Input(shape=(dim_input, ), name='input_y')
+dt = Input(shape=(1, ), name='input_dt')
+
+p1 = din
+k1 = post_model(p1)
+
+p2 = k1 * dt / 2 + din
+k2 = post_model(p2)
+
+p3 = k2 * dt / 2 + din
+k3 = post_model(p3)
+
+p4 = k3 * dt + din
+k4 = post_model(p4)
+
+out = 1 / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+test = Model(inputs=[din, dt], outputs=out)
+test.summary()
+
+plot_model(test, to_file="wudi.png")
+#%%
+step = np.ones((input_0.shape[0], 1)) * 1e-7
+rk4_grd = test.predict([input_0[labels], step])
