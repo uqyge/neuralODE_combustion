@@ -28,15 +28,18 @@
 ![rk4Model](./img/rk4Model.png)
 
 **H2 auto ignition**
+
 ![OH](fig/euler_1401_OH.png)
 ![OH](fig/rk4_1401_OH.png)
 
 - **explicit or implicit**
 **flame expansion**
+
 ![rk45](fig/flame_RK45.png)
 ![bdf](fig/flame_BDF.png)
 ![ODE Net](fig/flame_ODENet.png)
 
 ## Star me on github
+
 ![github](img/github.png)
 [https://github.com/uqyge/neuralODE_combustion](https://github.com/uqyge/neuralODE_combustion)
