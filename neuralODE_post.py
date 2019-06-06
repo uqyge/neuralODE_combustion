@@ -157,7 +157,7 @@ def odeInt(data_in, dt):
 solvers = {'euler': euler, 'midpoint': rk2, 'rk4': rk4}
 # %%
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
-post_species = pd.Index(['HO2', 'OH', 'O', 'H2'])
+post_species = pd.Index(['HO2', 'OH', 'O', 'Hs','Rho'])
 # post_species = pd.Index(['T'])
 # post_species = labels
 plt.rcParams['figure.figsize'] = [15, 5]
