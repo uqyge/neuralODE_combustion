@@ -66,10 +66,12 @@ def ignite_f(ini):
         while solver.successful() and solver.t < t_end:
 
             if solver.t == 0:
-                dt_ini = np.random.random_sample() * dt_base
+                # dt_ini = np.random.random_sample() * dt_base
+                dt_ini = dt_base
                 solver.integrate(solver.t + dt_ini)
 
-            dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
+            # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
+            dt = dt_base
             state_org = np.hstack([
                 gas[gas.species_names].concentrations,
                 np.dot(gas.partial_molar_enthalpies, gas[gas.species_names].X),
@@ -115,7 +117,8 @@ def ignite_f(ini):
 
 def dataGeneration():
 
-    T = np.random.rand(20) * 1200 + 1001
+    # T = np.random.rand(2) * 1200 + 1001
+    T = np.linspace(1001, 2201, 20)
 
     # n_s = np.random.rand(30) * 30 + 0.1
     # n_l = np.random.rand(30) * 30

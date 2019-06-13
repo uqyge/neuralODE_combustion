@@ -7,13 +7,15 @@ import matplotlib.pyplot as plt
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
-from src.dataGen import test_data
+# from src.dataGen import test_data
+from src.dataGenSensible import test_data
 
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 # columns = org.columns
 species = columns
-labels = columns.drop(['AR', 'dt', 'f', 'cp'])
-input_features = labels
+input_features = columns.drop(['AR','dt', 'f', 'cp','Rho'])
+labels = input_features.drop('T')
+
 
 # %%
 out_m = out_scaler.std.mean_.astype('float32')
@@ -47,7 +49,7 @@ post_model.add(model_trans)
 post_model.add(model_neuralODE)
 post_model.add(model_inv)
 post_model.save('postODENet.h5')
-
+post_model.summary()
 # %%
 # post_model.predict(org[labels].iloc[0:1])
 
@@ -157,7 +159,7 @@ def odeInt(data_in, dt):
 solvers = {'euler': euler, 'midpoint': rk2, 'rk4': rk4}
 # %%
 # post_species = species.drop(['cp', 'Hs', 'Rho','dt','f','N2'])
-post_species = pd.Index(['HO2', 'OH', 'O', 'Hs','Rho'])
+post_species = pd.Index(['HO2', 'OH', 'O'])
 # post_species = pd.Index(['T'])
 # post_species = labels
 plt.rcParams['figure.figsize'] = [15, 5]
@@ -238,7 +240,7 @@ def integration():
 acc = integration()
 #%%
 test['t'] = np.linspace(0, (test.shape[0] - 1) * dt, test.shape[0])
-sp = 'T'
+sp = 'H2O'
 plt.plot(acc['t'], acc[sp], 'rd', ms=2)
 plt.plot(test['t'], input_0[sp], 'b')
 plt.title('{},T={}'.format(sp, ini_T))
@@ -250,7 +252,7 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
 
-dim_input = len(labels)
+dim_input = len(input_features)
 
 din = Input(shape=(dim_input, ), name='input_y')
 dt = Input(shape=(1, ), name='input_dt')

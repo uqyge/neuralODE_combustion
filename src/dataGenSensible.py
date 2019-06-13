@@ -1,4 +1,3 @@
-import copy
 import pandas as pd
 import dask
 import dask.dataframe as dd
@@ -16,6 +15,7 @@ class ReactorOde:
         # ReactorOde object.
         self.gas = gas
         self.P = gas.P
+        self.rho = gas.density
 
     def __call__(self, t, y):
         """the ODE function, y' = f(t,y) """
@@ -23,7 +23,9 @@ class ReactorOde:
         # State vector is [T, Y_1, Y_2, ... Y_K]
         self.gas.set_unnormalized_mass_fractions(y[1:])
         self.gas.TP = y[0], self.P
-        rho = self.gas.density
+        # rho = self.gas.density
+        rho = self.rho
+        print('rho:{}'.format(rho))
 
         wdot = self.gas.net_production_rates
         dTdt = -(np.dot(self.gas.partial_molar_enthalpies, wdot) /
@@ -52,44 +54,52 @@ def ignite_f(ini):
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
             # gas = ct.Solution('../data/h2_sandiego.cti')
             gas = ct.Solution('../data/connaire.cti')
-            gas_h0 = ct.Solution('./data/connaire.cti')
+            gas_h0 = ct.Solution('../data/connaire.cti')
 
         if fuel == 'CH4':
             gas = ct.Solution('../data/grimech12.cti')
-            gas_h0 = ct.Solution('./data/grimech12.cti')
+            gas_h0 = ct.Solution('../data/grimech12.cti')
             # gas = ct.Solution('gri30.xml')
 
         P = ct.one_atm
 
         gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:4'
+        Ha = np.dot(gas.partial_molar_enthalpies,
+                    gas.Y / gas.molecular_weights)
+
         y0 = np.hstack((gas.T, gas.Y))
         ode = ReactorOde(gas)
         solver = scipy.integrate.ode(ode)
         solver.set_integrator('vode', method='bdf', with_jacobian=True)
         solver.set_initial_value(y0, 0.0)
+
         dt_base = dt
         while solver.successful() and solver.t < t_end:
-            gas_h0.Y = gas.Y
-            gas_h0.TP = T_ref, P
-            h0 = np.dot(gas_h0.partial_molar_enthalpies,
-                        (gas_h0.Y / gas_h0.molecular_weights)) * gas.density
-            ha = np.dot(gas.partial_molar_enthalpies,
-                        gas.Y / gas.molecular_weights) * gas.density
-            hs = ha - h0
-
             if solver.t == 0:
-                dt_ini = np.random.random_sample() * dt_base
+                # dt_ini = np.random.random_sample() * dt_base
+                dt_ini = dt_base
                 solver.integrate(solver.t + dt_ini)
+                gas.TPY = solver.y[0], P, solver.y[1:]
 
-            dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
+            gas_h0.TPY = T_ref, P, gas.Y
+            H0 = np.dot(gas_h0.partial_molar_enthalpies,
+                        (gas_h0.Y / gas_h0.molecular_weights))
+            hs = (Ha - H0) * gas.density
+
             state_org = np.hstack([
                 gas[gas.species_names].concentrations, hs, gas.T, gas.density,
                 gas.cp, dt, n_fuel
             ])
 
+            # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
+            dt = dt_base
             solver.integrate(solver.t + dt)
-
             gas.TPY = solver.y[0], P, solver.y[1:]
+
+            gas_h0.TPY = T_ref, P, gas.Y
+            H0 = np.dot(gas_h0.partial_molar_enthalpies,
+                        (gas_h0.Y / gas_h0.molecular_weights))
+            hs = (Ha - H0) * gas.density
 
             # Extract the state of the reactor
             state_new = np.hstack([
@@ -97,14 +107,9 @@ def ignite_f(ini):
                 gas.cp, dt, n_fuel
             ])
 
-            # state_new = np.hstack([gas[gas.species_names].Y])
             state_res = state_new - state_org
             res = abs(
                 state_res[state_org != 0] / state_org[state_org != 0]) / dt
-            # res[res==np.inf]=0
-            # res = np.nan_to_num(res)
-            # res=res[res!=0]
-            # print(res.max())
 
             # Update the sample
             tmp.append(state_org)
@@ -112,10 +117,11 @@ def ignite_f(ini):
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
             if ((res.max() < 1e3 and
-                 (solver.t / dt) > 50)) or (gas['H2'].X < 0.005
-                                            or gas['H2'].X > 0.995):
+                 (solver.t / dt) > 50)) or (gas['H2'].X < 0.003
+                                            or gas['H2'].X > 0.997):
                 # if res.max() < 1e-5:
                 break
+
         train_old = tmp[:len(tmp) - 2]
         train_org = tmp[1:len(tmp) - 1]
         train_new = tmp[2:len(tmp)]
@@ -125,7 +131,8 @@ def ignite_f(ini):
 
 def dataGeneration():
 
-    T = np.random.rand(20) * 1200 + 1001
+    # T = np.random.rand(2) * 1200 + 1001
+    T = np.linspace(1001, 2201, 20)
 
     # n_s = np.random.rand(30) * 30 + 0.1
     # n_l = np.random.rand(30) * 30
@@ -169,10 +176,6 @@ def dataGeneration():
     train_org = pd.DataFrame(data=org, columns=columnNames)
     train_new = pd.DataFrame(data=new, columns=columnNames)
 
-    # df = pd.concat([train_old, train_org, train_new])
-    # key = 'all_the_things'
-    # df.to_hdf('central_1e-8.h5', key, complib='zlib', complevel=0)
-
     s = time.time()
     train_old.to_hdf('tmp.h5', key='old', format='table')
     train_org.to_hdf('tmp.h5', key='org', format='table')
@@ -208,49 +211,47 @@ def ignite_post(ini):
         P = ct.one_atm
 
         gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:4'
-
-        # gas_h0 = gas
-        # gas_h0.TP = T_ref, P
-        # h0 = np.dot(gas_h0.partial_molar_enthalpies, gas_h0.X)
-        # print("enthalpy of formation:", h0)
+        Ha = np.dot(gas.partial_molar_enthalpies,
+                    gas.Y / gas.molecular_weights)
 
         y0 = np.hstack((gas.T, gas.Y))
         ode = ReactorOde(gas)
         solver = scipy.integrate.ode(ode)
         solver.set_integrator('vode', method='bdf', with_jacobian=True)
         solver.set_initial_value(y0, 0.0)
-        #         dt_base = dt
+
         while solver.successful() and solver.t < t_end:
-            print('t:{}'.format(solver.t))
-            # gas_h0.Y = np.copy(gas.Y)
-            gas_h0.Y = gas.Y
-            gas_h0.TP = T_ref, P
-            h0 = np.dot(gas_h0.partial_molar_enthalpies,
-                        (gas_h0.Y / gas_h0.molecular_weights)) * gas.density
-            ha = np.dot(gas.partial_molar_enthalpies,
-                        gas.Y / gas.molecular_weights) * gas.density
-
-            hs = ha - h0
-            print("enthalpy of formation @{}:   {}".format(gas_h0.T, h0))
-            print("absolute enthalpy @{}:   {}".format(gas.T, ha))
-            print("sensible enthalpy @{}:   {}".format(gas.T, hs))
-
             if solver.t == 0:
-                #                 dt_ini = np.random.random_sample() * 1e-6
                 dt_ini = dt
                 solver.integrate(solver.t + dt_ini)
+                gas.TPY = solver.y[0], P, solver.y[1:]
 
+            # print('t:{}'.format(solver.t))
+            gas_h0.TPY = T_ref, P, gas.Y
+            # gas_h0.TPY = T_ref, P, solver.y[1:]
+            H0 = np.dot(gas_h0.partial_molar_enthalpies,
+                        (gas_h0.Y / gas_h0.molecular_weights))
+            hs = (Ha - H0) * gas.density
+            # print("enthalpy of formation @{}:   {}".format(gas_h0.T, h0))
+            # print("absolute enthalpy @{}:   {}".format(gas.T, ha))
+            # print("sensible enthalpy org @{}:   {}".format(gas.T, hs))
 
-#             dt = dt_base * (0.9+round(0.2*np.random.random(),2))
             state_org = np.hstack([
                 gas[gas.species_names].concentrations, hs, gas.T, gas.density,
                 gas.cp, dt, n_fuel
             ])
 
             solver.integrate(solver.t + dt)
-
             gas.TPY = solver.y[0], P, solver.y[1:]
 
+            gas_h0.TPY = T_ref, P, gas.Y
+            # gas_h0.TPY = T_ref, P, solver.y[1:0]
+
+            H0 = np.dot(gas_h0.partial_molar_enthalpies,
+                        (gas_h0.Y / gas_h0.molecular_weights))
+            hs = (Ha - H0) * gas.density
+
+            # print("sensible enthalpy new @{}:   {}".format(gas.T, hs))
             # Extract the state of the reactor
             state_new = np.hstack([
                 gas[gas.species_names].concentrations, hs, gas.T, gas.density,
@@ -271,6 +272,8 @@ def ignite_post(ini):
                  (solver.t / dt) > 50)) or (gas['H2'].X < 0.005
                                             or gas['H2'].X > 0.995):
                 # if res.max() < 1e-5:
+                print(res)
+                print(state_org)
                 break
 
     return train_org, train_new
@@ -293,5 +296,5 @@ def test_data(temp, n_fuel, columns, dt):
 
 
 if __name__ == '__main__':
-    # dataGeneration()
-    ignite_post([1001, 2, 'H2', 1e-6])
+    dataGeneration()
+    # ignite_post([1401, 2, 'H2', 1e-6])
