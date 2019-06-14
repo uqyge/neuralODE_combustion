@@ -95,7 +95,7 @@ schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-4,
 callbacks_list1 = [checkpoint,tensorflow.keras.callbacks.TensorBoard('./tb')]
 callbacks_list2 = [checkpoint, schedule]
 
-# model.load_weights(filepath)
+model.load_weights(filepath)
 
 # fit the model
 history = model.fit(

@@ -340,3 +340,110 @@ for n in [2]:
         plt.show()
 
 #%%
+# %%
+import tensorflow.keras as keras
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.utils import plot_model
+
+dim_input = len(input_features)
+
+in_0 = Input(shape=(dim_input+1,),name='input_0')
+# din = Input(shape=(dim_input, ), name='input_y')
+# dt = Input(shape=(1, ), name='input_dt')
+
+din = Dense(dim_input,activation='linear')(in_0)
+dt = Dense(1, activation='linear')(in_0)
+
+
+p1 = din
+k1 = post_model(p1)
+
+mul2 = keras.layers.multiply([k1, keras.layers.Lambda(lambda x: x * 0.5)(dt)])
+p2 = keras.layers.add([mul2, p1])
+k2 = post_model(p2)
+
+mul3 = keras.layers.multiply([k2, keras.layers.Lambda(lambda x: x * 0.5)(dt)])
+p3 = keras.layers.add([mul3, p1])
+k3 = post_model(p3)
+
+mul4 = keras.layers.multiply([k3, dt])
+p4 = keras.layers.add([mul4, p1])
+k4 = post_model(p4)
+
+out1 = keras.layers.Lambda(lambda x: x * 1 / 6)(k1)
+out2 = keras.layers.Lambda(lambda x: x * 1 / 3)(k2)
+out3 = keras.layers.Lambda(lambda x: x * 1 / 3)(k3)
+out4 = keras.layers.Lambda(lambda x: x * 1 / 6)(k4)
+out = keras.layers.add([out1, out2, out3, out4],name='output')
+
+# rk4Model = Model(inputs=[din, dt], outputs=out)
+rk4Model = Model(inputs=in_0, outputs=out)
+w_1 = np.vstack([np.identity(dim_input), np.zeros(dim_input)])
+b_1 = np.zeros(dim_input)
+w_2 = np.vstack([np.zeros((dim_input, 1)), np.ones(1)])
+b_2 = np.zeros(1)
+rk4Model.layers[1].set_weights([w_1, b_1])
+rk4Model.layers[2].set_weights([w_2, b_2])
+
+rk4Model.summary()
+
+plot_model(rk4Model, to_file="fig/rk4Model.png")
+rk4Model.save('rk4Model.h5')
+
+#%% RK4 Model
+post_species = pd.Index(['HO2', 'OH', 'O', 'Hs'])
+
+plt.rcParams['figure.figsize'] = [15, 5]
+st = 1
+ini_T = 1401
+dt = 1e-6
+solver = 'rk4Model'
+for n in [2]:
+    input_0, test = test_data(ini_T, n, columns, dt)
+
+    input_0 = input_0.reset_index(drop=True)
+    test = test.reset_index(drop=True)
+    print(test.shape)
+
+    test = test.astype('float32')
+    s = 2
+    e = -1
+    input_0 = input_0.iloc[s:e].reset_index(drop=True)
+    test = test.iloc[s:e].reset_index(drop=True)
+    print(test.shape)
+
+    pred,
+    steps = np.ones((input_0.shape[0], 1))
+
+    model_pred = pd.DataFrame(rk4Model.predict([input_0[labels], steps * dt]),
+                              columns=labels)
+    pred = input_0[labels] + model_pred * dt
+
+    test_target = ((test[labels] - input_0[labels]) / dt)
+
+    testGrad = pd.DataFrame(out_scaler.transform(test_target[labels]),
+                            columns=labels)
+    trGrad = pd.DataFrame(out_scaler.transform(model_pred[labels]),
+                          columns=labels)
+
+    for sp in post_species.intersection(species):
+        f, axarr = plt.subplots(1, 3)
+        f.suptitle('{}: {}, T={}'.format(solver.upper(), sp, ini_T))
+
+        axarr[0].plot(test[sp])
+        axarr[0].plot(pred[sp], 'rd', ms=2)
+
+        axarr[1].plot((test[sp] - pred[sp]) / test[sp].max(), 'yd', ms=2)
+
+        ax2 = axarr[1].twinx()
+        ax2.plot(test_target[sp], 'bd', ms=2)
+        ax2.plot(model_pred[sp], 'rd', ms=2)
+
+        axarr[2].plot(testGrad[sp], 'bd', ms=2)
+        axarr[2].plot(trGrad[sp], 'rd', ms=2)
+
+        plt.savefig('fig/' + '{}_{}_{}_{}'.format(st, solver, ini_T, sp))
+        plt.show()
+
+#%%

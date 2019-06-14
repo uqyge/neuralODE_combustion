@@ -9,19 +9,18 @@ import pickle
 from sklearn.model_selection import train_test_split
 from src.dataScaling import data_scaler
 
-
 # %%
 dataPath = 'src/tmp.h5'
 ddOrg = dd.read_hdf(dataPath, key='org')
 ddWdot = dd.read_hdf(dataPath, key='wdot')
 
-
 # %%
-input_features = ddOrg.columns.drop(['AR','dt', 'f', 'cp','Rho'])
-labels = input_features.drop('T')
+input_features = ddOrg.columns.drop(['AR', 'dt', 'f', 'cp', 'Rho'])
+labels = input_features
 
 org = ddOrg.compute()
 wdot = ddWdot.compute()
+
 
 # %%
 def read_h5_data(input_features, labels):
@@ -36,11 +35,12 @@ def read_h5_data(input_features, labels):
 
     return input_np, label_np, in_scaler, out_scaler
 
+
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels)
-x_train, x_test, y_train, y_test = train_test_split(
-    x_input, y_label, test_size=0.05)
+x_train, x_test, y_train, y_test = train_test_split(x_input,
+                                                    y_label,
+                                                    test_size=0.05)
 pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
-
 
 #%%

@@ -6,8 +6,8 @@ from tensorflow.python.saved_model import tag_constants
 from tensorflow.keras.utils import plot_model
 
 #%%
-model = keras.models.load_model('./postODENet.h5')
-# model = keras.models.load_model('./rk4Model.h5')
+# model = keras.models.load_model('./postODENet.h5')
+model = keras.models.load_model('./rk4Model.h5')
 model.summary()
 plot_model(model, to_file="./outModel.png")
 
@@ -18,9 +18,11 @@ keras.experimental.export_saved_model(model, input_saved_model_dir)
 
 #%%
 # output_name = [t.op.name for t in model.outputs]
-output_name = ['sequential/dense/BiasAdd']
+output_name = [t.op.inputs[0].op.name for t in model.outputs] 
+# output_name = ['out/add_2']
+# output_name = ['sequential/dense/BiasAdd']
 # output_name = ['sequential_2/BiasAdd']
-# output_name = ['output_1/BiasAdd']
+print(output_name)
 
 output_graph_filename = input_saved_model_dir + '/out.pb'
 output_node_names = output_name[0]
@@ -43,3 +45,5 @@ freeze_graph.freeze_graph(input_graph_filename, input_saver_def_path,
 
 #%%
 !./pb2uff
+
+#%%

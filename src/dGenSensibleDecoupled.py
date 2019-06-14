@@ -91,6 +91,7 @@ def ignite_f_decoupled(ini):
                 gas[gas.species_names].concentrations, hs_org, gas.T,
                 gas.density, gas.cp, dt, n_fuel
             ])
+            wdot = gas[gas.species_names].net_production_rates
 
             # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
             dt = dt_base
@@ -109,10 +110,7 @@ def ignite_f_decoupled(ini):
                 gas.density, gas.cp, dt, n_fuel
             ])
 
-            state_wdot = np.hstack([
-                gas[gas.species_names].net_production_rates,
-                (hs_new - hs_org) / dt
-            ])
+            state_wdot = np.hstack([wdot, (hs_new - hs_org) / dt, solver.y[0]])
             state_res = state_new - state_org
             res = abs(
                 state_res[state_org != 0] / state_org[state_org != 0]) / dt
@@ -171,8 +169,8 @@ def dataGeneration():
     # gas = ct.Solution('../data/grimech12.cti')
     columnNames = gas.species_names
     columnNames = columnNames + ['Hs']
-    wdotNames = columnNames
     columnNames = columnNames + ['T']
+    wdotNames = columnNames
     columnNames = columnNames + ['Rho']
     columnNames = columnNames + ['cp']
     columnNames = columnNames + ['dt']
