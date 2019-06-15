@@ -37,7 +37,7 @@ def ignite_f_decoupled(ini):
     n_fuel = ini[1]
     fuel = ini[2]
 
-    train_org = []
+    train_c = []
     train_wdot = []
     tmp = []
 
@@ -87,11 +87,14 @@ def ignite_f_decoupled(ini):
                 gas[gas.species_names].concentrations, hs_density, gas.T,
                 gas.density, gas.cp, dt, n_fuel
             ])
+            wdot = gas[gas.species_names].net_production_rates
+            T_org = gas.T
+
             state_c = np.hstack([
                 gas[gas.species_names].concentrations, hs_org, gas.T,
                 gas.density, gas.cp, dt, n_fuel
             ])
-            wdot = gas[gas.species_names].net_production_rates
+            train_c.append(state_c)
 
             # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
             dt = dt_base
@@ -110,13 +113,13 @@ def ignite_f_decoupled(ini):
                 gas.density, gas.cp, dt, n_fuel
             ])
 
-            state_wdot = np.hstack([wdot, (hs_new - hs_org) / dt, solver.y[0]])
             state_res = state_new - state_org
             res = abs(
                 state_res[state_org != 0] / state_org[state_org != 0]) / dt
 
             # Update the sample
-            train_org.append(state_c)
+            state_wdot = np.hstack(
+                [wdot, (hs_new - hs_org) / dt, (solver.y[0] - T_org) / dt])
             train_wdot.append(state_wdot)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
@@ -126,11 +129,7 @@ def ignite_f_decoupled(ini):
                 # if res.max() < 1e-5:
                 break
 
-        # train_old = tmp[:len(tmp) - 2]
-        # train_org = tmp[1:len(tmp) - 1]
-        # train_new = tmp[2:len(tmp)]
-
-    return train_org, train_wdot
+    return train_c, train_wdot
 
 
 def dataGeneration():

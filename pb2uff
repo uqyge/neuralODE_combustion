@@ -1,3 +1,0 @@
-#!/bin/bash
-
-nvidia-docker run --rm -v /home/edison/repos/neuralODE_combustion:/app nvcr.io/nvidia/tensorrt:19.05-py3 convert-to-uff /app/savedModel/out.pb

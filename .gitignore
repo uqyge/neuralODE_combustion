@@ -13,6 +13,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 tb/
+savedModel/
 build/
 develop-eggs/
 dist/
