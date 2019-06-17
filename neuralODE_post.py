@@ -50,7 +50,7 @@ model_trans.layers[0].set_weights([(1 / in_s) * np.identity(len(in_m)),
                                    -(in_m / in_s)])
 
 # %%
-model_neuralODE = load_model('base_neuralODE.h5')
+model_neuralODE = load_model('base_neuralODE_n64_b5_fcTrue.h5')
 model_neuralODE.summary()
 
 # %%
@@ -368,11 +368,7 @@ for n in [2]:
         plt.show()
 
 #%%
-# %%
-import tensorflow.keras as keras
-from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
-from tensorflow.keras.utils import plot_model
+
 
 
 #%% RK4 Model
