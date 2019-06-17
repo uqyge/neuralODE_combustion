@@ -7,11 +7,11 @@ from tensorflow.keras.utils import plot_model
 
 #%%
 # model = keras.models.load_model('./postODENet.h5')
-model = keras.models.load_model('./rk4Model.h5')
-output_name = ['output/add_2']
+# model = keras.models.load_model('./rk4Model.h5')
+# output_name = ['output/add_2']
 
-# model = keras.models.load_model('./baseModel.h5')
-# output_name = ['base/inv/inv_out/BiasAdd']
+model = keras.models.load_model('./baseModel.h5')
+output_name = ['base/inv/inv_out/BiasAdd']
 
 model.summary()
 plot_model(model, to_file="./outModel.png")

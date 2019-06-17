@@ -7,6 +7,7 @@ import time
 import cantera as ct
 import numpy as np
 import scipy.integrate
+import matplotlib.pyplot as plt
 
 
 class ReactorOde:
@@ -39,6 +40,7 @@ def ignite_f_decoupled(ini):
 
     train_c = []
     train_wdot = []
+    phi = []
     tmp = []
 
     t_end = 1e-3
@@ -49,8 +51,12 @@ def ignite_f_decoupled(ini):
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
             # gas = ct.Solution('../data/h2_sandiego.cti')
-            gas = ct.Solution('../data/connaire.cti')
-            gas_h0 = ct.Solution('../data/connaire.cti')
+            try:
+                gas = ct.Solution('../data/connaire.cti')
+                gas_h0 = ct.Solution('../data/connaire.cti')
+            except:
+                gas = ct.Solution('./data/connaire.cti')
+                gas_h0 = ct.Solution('./data/connaire.cti')
 
         if fuel == 'CH4':
             gas = ct.Solution('../data/grimech12.cti')
@@ -59,7 +65,9 @@ def ignite_f_decoupled(ini):
 
         P = ct.one_atm
 
-        gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:4'
+        gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:3.728'
+        # print(gas.get_equivalence_ratio())
+        phi.append(gas.get_equivalence_ratio())
         Ha = np.dot(gas.partial_molar_enthalpies,
                     gas.Y / gas.molecular_weights)
 
@@ -129,11 +137,10 @@ def ignite_f_decoupled(ini):
                 # if res.max() < 1e-5:
                 break
 
-    return train_c, train_wdot
+    return train_c, train_wdot, phi
 
 
 def dataGeneration():
-
     # T = np.random.rand(2) * 1200 + 1001
     T = np.linspace(1001, 2201, 20)
 
@@ -162,9 +169,14 @@ def dataGeneration():
 
     org = np.concatenate([x[0] for x in a])
     wdot = np.concatenate([x[1] for x in a])
+    phi = np.concatenate([x[2] for x in a])
 
     # gas = ct.Solution('../data/h2_sandiego.cti')
-    gas = ct.Solution('../data/connaire.cti')
+    try:
+        gas = ct.Solution('./data/connaire.cti')
+    except:
+        gas = ct.Solution('../data/connaire.cti')
+
     # gas = ct.Solution('../data/grimech12.cti')
     columnNames = gas.species_names
     columnNames = columnNames + ['Hs']
@@ -185,6 +197,8 @@ def dataGeneration():
 
     e = time.time()
     print('saving takes {}s'.format(e - s))
+    plt.plot(phi)
+    # return phi
 
 
 def ignite_post(ini):
@@ -203,8 +217,12 @@ def ignite_post(ini):
         if fuel == 'H2':
             # gas = ct.Solution('./data/Boivin_newTherm.cti')
             # gas = ct.Solution('./data/h2_sandiego.cti')
-            gas = ct.Solution('./data/connaire.cti')
-            gas_h0 = ct.Solution('./data/connaire.cti')
+            try:
+                gas = ct.Solution('../data/connaire.cti')
+                gas_h0 = ct.Solution('../data/connaire.cti')
+            except:
+                gas = ct.Solution('./data/connaire.cti')
+                gas_h0 = ct.Solution('./data/connaire.cti')
 
         if fuel == 'CH4':
             gas = ct.Solution('./data/grimech12.cti')
@@ -298,5 +316,5 @@ def test_data(temp, n_fuel, columns, dt):
 
 
 if __name__ == '__main__':
-    dataGeneration()
+    phi = dataGeneration()
     # ignite_post([1401, 2, 'H2', 1e-6])
