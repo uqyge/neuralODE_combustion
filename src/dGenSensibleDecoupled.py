@@ -65,11 +65,14 @@ def ignite_f_decoupled(ini):
 
         P = ct.one_atm
 
+        # gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:3.76'
         gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:3.728'
         # print(gas.get_equivalence_ratio())
         phi.append(gas.get_equivalence_ratio())
         Ha = np.dot(gas.partial_molar_enthalpies,
                     gas.Y / gas.molecular_weights)
+        gas_h0.TPY = T_ref, P, gas.Y
+        hc = (gas_h0.partial_molar_enthalpies / gas_h0.molecular_weights)
 
         y0 = np.hstack((gas.T, gas.Y))
         ode = ReactorOde(gas)
@@ -95,7 +98,9 @@ def ignite_f_decoupled(ini):
                 gas[gas.species_names].concentrations, hs_density, gas.T,
                 gas.density, gas.cp, dt, n_fuel
             ])
-            wdot = gas[gas.species_names].net_production_rates
+            w_dot = gas[gas.species_names].net_production_rates
+            # hs_dot = np.dot(gas[gas.species_names].net_production_rates,
+            # -1 * hc) / gas.density
             T_org = gas.T
 
             state_c = np.hstack([
@@ -125,13 +130,17 @@ def ignite_f_decoupled(ini):
             res = abs(
                 state_res[state_org != 0] / state_org[state_org != 0]) / dt
 
+            # print('...')
+            # print('hs dot:', Hsdot)
+            hs_dot = (hs_new - hs_org) / dt
+            # print('hs bac:', (hs_new - hs_org) / dt)
+            # print('h ratio:', hs_dot / (hs_new - hs_org) * dt)
             # Update the sample
-            state_wdot = np.hstack(
-                [wdot, (hs_new - hs_org) / dt, (solver.y[0] - T_org) / dt])
+            state_wdot = np.hstack([w_dot, hs_dot, (solver.y[0] - T_org) / dt])
             train_wdot.append(state_wdot)
 
             # if (abs(state_res.max() / state_org.max()) < 1e-5 and (solver.t / dt) > 200):
-            if ((res.max() < 1e3 and
+            if ((res.max() < 1e2 and
                  (solver.t / dt) > 50)) or (gas['H2'].X < 0.003
                                             or gas['H2'].X > 0.997):
                 # if res.max() < 1e-5:

@@ -1,33 +1,43 @@
-# %%
-from scipy.integrate import odeint
-import pickle
+#%%
 import pandas as pd
+import dask
+import dask.dataframe as dd
+from dask.delayed import delayed
+
+import time
+import cantera as ct
 import numpy as np
+import scipy.integrate
 import matplotlib.pyplot as plt
-import tensorflow.keras as keras
-from tensorflow.keras.layers import Dense, Activation, Input
-from tensorflow.keras.models import Sequential, Model, load_model
-from tensorflow.keras.utils import plot_model
-# %%
-dim_input = 3
-in_0 = Input(shape=(dim_input + 1, ), name='input_0')
-x_dy = Dense(dim_input, activation='linear')(in_0)
-x_dt = Dense(1, activation='linear')(in_0)
 
-# w_1 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]])
-# w_2 = np.array([[0], [0], [0], [1]])
+#%%
+T_ref = 298.15
+P = ct.one_atm
 
-w_1 = np.vstack([np.identity(dim_input), np.zeros(dim_input)])
-b_1 = np.zeros(dim_input)
-w_2 = np.vstack([np.zeros((dim_input, 1)), np.ones(1)])
-b_2 = np.zeros(1)
-model = Model(inputs=in_0, outputs=[x_dy, x_dt])
-model.layers[1].set_weights([w_1, b_1])
-model.layers[2].set_weights([w_2, b_2])
-model.summary()
+gas = ct.Solution('./data/connaire.cti')
+gas_0 = ct.Solution('./data/connaire.cti')
+# gas.TP = T_ref,P
 
-# %%
-t_0 = np.array([[10, 21, 33, 4]])
-out = model.predict(t_0)
-print(out)
+test_y = np.array([
+    0.00641602, 0.00485236, 8.66014e-05, 0.0691154, 5.32123e-06, 0.745117,
+    0.153911, 0.00265207, 0.0178443, 1.44828e-07
+])
+test_T = 1361.52
+
+gas.TPY = test_T, P, test_y
+# gas_0.TPY = T_ref, P, test_y
+gas_0.TP = T_ref, P
+#%%
+# h0 = gas.Y * gas.partial_molar_enthalpies / gas.molecular_weights
+h0 = gas_0.partial_molar_enthalpies / gas_0.molecular_weights
+print(gas_0.Y)
+print('.......')
+print(h0)
+
+#%%
+hc_dot = np.dot(h0, gas.net_production_rates)
+print(hc_dot)
+#%%
+H2O_rate=gas['H2O'].net_production_rates*gas['H2O'].molecular_weights/gas.density
+print(H2O_rate)
 #%%

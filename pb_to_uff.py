@@ -5,12 +5,14 @@ from tensorflow.python.tools import freeze_graph
 from tensorflow.python.saved_model import tag_constants
 from tensorflow.keras.utils import plot_model
 
+
 #%%
 # model = keras.models.load_model('./postODENet.h5')
+
 # model = keras.models.load_model('./rk4Model.h5')
 # output_name = ['output/add_2']
 
-model = keras.models.load_model('./baseModel.h5')
+model = keras.models.load_model('./eulerModel.h5')
 output_name = ['base/inv/inv_out/BiasAdd']
 
 model.summary()

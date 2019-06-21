@@ -77,25 +77,25 @@ for n_neuron in [64]:
                                         verbose=1,
                                         save_best_only=True,
                                         mode='min',
-                                        #  save_freq='epoch',
-                                        period = 10)
+                                        save_freq='epoch')
+                                        # period = 10)
 
             epoch_size = x_train.shape[0]
             ep_size = 0
             base = 2
             clc = 2
-            for i in range(8):
+            for i in range(5):
                 ep_size += base*clc**(i)
             print(ep_size)
             epochs, c_len = ep_size, base
-            schedule = SGDRScheduler(min_lr=1e-5, max_lr=1e-3,
+            schedule = SGDRScheduler(min_lr=1e-6, max_lr=1e-4,
                                     steps_per_epoch=np.ceil(epoch_size/batch_size),
                                     cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
             callbacks_list1 = [checkpoint, tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name))]
             callbacks_list2 = [checkpoint, schedule,tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name))]
 
-            # model.load_weights(filepath)
+            model.load_weights(filepath)
 
             # fit the model
             history = model.fit(
