@@ -78,6 +78,7 @@ baseModel.summary()
 plot_model(baseModel, to_file="img/eulerModel.png")
 baseModel.save('eulerModel.h5')
 
+
 # %%
 dim_input = len(input_features)
 
