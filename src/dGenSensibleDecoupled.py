@@ -46,7 +46,7 @@ def ignite_f_decoupled(ini):
     t_end = 1e-3
     T_ref = 298.15
 
-    dt_dict = [1e-7]
+    dt_dict = [1e-6]
     for dt in dt_dict:
         if fuel == 'H2':
             try:
@@ -102,6 +102,8 @@ def ignite_f_decoupled(ini):
             # hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot) / gas.density
             hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot)
             T_org = gas.T
+            w_tracker = max(abs(w_dot[:-1] / gas.concentrations[:-1]))
+            # print(max(w_tracker[:-1]))
 
             state_c = np.hstack([
                 gas[gas.species_names].concentrations, hs_org, gas.T,
@@ -111,6 +113,8 @@ def ignite_f_decoupled(ini):
 
             # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
             dt = dt_base
+            if w_tracker > 5e5:
+                dt = dt / 10
             solver.integrate(solver.t + dt)
             gas.TPY = solver.y[0], P, solver.y[1:]
 
@@ -159,8 +163,8 @@ def dataGeneration():
     n_l = np.linspace(0., 30, 30)
 
     n = np.unique(np.concatenate((n_s, n_l)))[1:]
-    n = n[n > 0.4]
-    # n = n[n >= 0.1]
+    # n = n[n > 0.4]
+    n = n[n >= 0.1]
 
     XX, YY = np.meshgrid(T, n)
     ini = np.concatenate((XX.reshape(-1, 1), YY.reshape(-1, 1)), axis=1)
@@ -204,9 +208,10 @@ def dataGeneration():
     train_wdot.to_hdf('tmp.h5', key='wdot', format='table')
     print("H2O2 wdot min:", train_wdot['H2O2'].min())
     e = time.time()
-    print('saving takes {}s'.format(e - s))
+    print('saving {} takes {}s'.format(train_wdot.shape, (e - s)))
     # plt.plot(phi)
     # return phi
+    return train_wdot
 
 
 def ignite_post(ini):
@@ -414,7 +419,7 @@ def test_data(temp, n_fuel, columns, dt):
 
 
 if __name__ == '__main__':
-    phi = dataGeneration()
+    t_wdot = dataGeneration()
     # c, w = ignite_post([1401, 2, 'H2', 1e-6])
 
     # try:
