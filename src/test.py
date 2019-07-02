@@ -56,8 +56,10 @@ out_model = model.predict(df_of_c[in_f])
 df_wdot_dnn = pd.DataFrame(out_model, columns=labels)
 # df_wdot_dnn = pd.DataFrame(out_model, columns=labels.drop(['T','N2']))
 #%%
-plt.plot(df_wdot_dnn['Hs'])
-plt.plot(df_wdot_dnn_base['Hs'])
+plt.plot(df_wdot_dnn['Hs'],label='euler')
+plt.plot(df_wdot_dnn_base['Hs'],label='network')
+plt.plot(df_of_c['RR_Hs'],label='of')
+plt.legend()
 plt.figure()
 #%%
 gas = ct.Solution('./data/connaire.cti')
@@ -76,13 +78,13 @@ df_wdot_ode = pd.DataFrame(out_ode, columns=gas.species_names + ['Hs', 'T'])
 
 #%%
 # Compare ode and dnn
-sp = 'H2O'
-s = 30
-e = 500
+sp = 'H2O2'
+s = 50
+e = 300
 plt.subplot(1, 2, 1)
 plt.plot(df_wdot_ode[sp][s:e], label='ode')
 plt.plot(df_wdot_dnn[sp][s:e], label='dnn')
-# plt.plot(df_wdot_dnn_base[sp][s:e], label='dnn_base')
+plt.plot(df_wdot_dnn_base[sp][s:e], label='dnn_base')
 plt.legend()
 plt.subplot(1, 2, 2)
 plt.plot(df_of_c[sp][s:e])

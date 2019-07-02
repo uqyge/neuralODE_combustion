@@ -46,7 +46,7 @@ def ignite_f_decoupled(ini):
     t_end = 1e-3
     T_ref = 298.15
 
-    dt_dict = [1e-6]
+    dt_dict = [1e-7]
     for dt in dt_dict:
         if fuel == 'H2':
             try:
@@ -81,12 +81,18 @@ def ignite_f_decoupled(ini):
         solver.set_initial_value(y0, 0.0)
 
         dt_base = dt
+        v = 1e4
         while solver.successful() and solver.t < t_end:
             if solver.t == 0:
                 # dt_ini = np.random.random_sample() * dt_base
                 dt_ini = dt_base
                 solver.integrate(solver.t + dt_ini)
                 gas.TPY = solver.y[0], P, solver.y[1:]
+
+            # convection
+            tmp = gas.Y
+            tmp[1] = max(tmp[1] - v * dt, 1e-10)
+            gas.Y = tmp
 
             gas_h0.TPY = T_ref, P, gas.Y
             H0 = np.dot(gas_h0.partial_molar_enthalpies,
@@ -113,7 +119,7 @@ def ignite_f_decoupled(ini):
 
             # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
             dt = dt_base
-            if w_tracker > 5e5:
+            if w_tracker * dt > 0.2:
                 dt = dt / 10
             solver.integrate(solver.t + dt)
             gas.TPY = solver.y[0], P, solver.y[1:]
@@ -159,8 +165,8 @@ def dataGeneration():
 
     # n_s = np.random.rand(10) * 30 + 0.1
     # n_l = np.random.rand(30) * 30
-    n_s = np.linspace(0., 8, 20)
-    n_l = np.linspace(0., 30, 30)
+    n_s = np.linspace(0.1, 8, 20)
+    n_l = np.linspace(0.3, 30, 30)
 
     n = np.unique(np.concatenate((n_s, n_l)))[1:]
     # n = n[n > 0.4]
@@ -179,7 +185,7 @@ def dataGeneration():
 
     print('a[0][0]={}'.format(len(a[0][0])))
     e = time.time()
-    print('There are {} sets.'.format(len(a)), e - s)
+    print('Creating {} sets, taking {}s'.format(len(a), e - s))
 
     org = np.concatenate([x[0] for x in a])
     wdot = np.concatenate([x[1] for x in a])
@@ -210,8 +216,8 @@ def dataGeneration():
     e = time.time()
     print('saving {} takes {}s'.format(train_wdot.shape, (e - s)))
     # plt.plot(phi)
-    # return phi
-    return train_wdot
+    return phi
+    # return train_wdot
 
 
 def ignite_post(ini):
