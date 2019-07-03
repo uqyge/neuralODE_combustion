@@ -34,19 +34,17 @@ class ReactorOde:
 
 
 def ignite_f_decoupled(ini):
-    temp = ini[0]
-    n_fuel = ini[1]
-    fuel = ini[2]
+    temp, n_fuel, fuel = ini
 
     train_c = []
     train_wdot = []
     phi = []
-    tmp = []
+    # tmp = []
 
-    t_end = 1e-3
     T_ref = 298.15
+    t_end = 1e-3
 
-    dt_dict = [1e-7]
+    dt_dict = [1e-6]
     for dt in dt_dict:
         if fuel == 'H2':
             try:
@@ -81,7 +79,7 @@ def ignite_f_decoupled(ini):
         solver.set_initial_value(y0, 0.0)
 
         dt_base = dt
-        v = 1e4
+        v = 5e6
         while solver.successful() and solver.t < t_end:
             if solver.t == 0:
                 # dt_ini = np.random.random_sample() * dt_base
@@ -91,8 +89,12 @@ def ignite_f_decoupled(ini):
 
             # convection
             tmp = gas.Y
-            tmp[1] = max(tmp[1] - v * dt, 1e-10)
-            gas.Y = tmp
+            tmp[1] = max(tmp[1] - gas.density * v * dt, 1e-10)
+            tmp[3] = max(tmp[3] - gas.density * v * dt, 1e-10)
+            tmp[6] = max(tmp[6] - gas.density * v * dt, 1e-10)
+            # gas.Y = tmp
+            gas.set_unnormalized_mass_fractions(tmp)
+            # print("b:", dt)
 
             gas_h0.TPY = T_ref, P, gas.Y
             H0 = np.dot(gas_h0.partial_molar_enthalpies,
@@ -107,6 +109,8 @@ def ignite_f_decoupled(ini):
             w_dot = gas[gas.species_names].net_production_rates
             # hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot) / gas.density
             hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot)
+            T_dot = hs_dot / (gas.density * gas.cp)
+
             T_org = gas.T
             w_tracker = max(abs(w_dot[:-1] / gas.concentrations[:-1]))
             # print(max(w_tracker[:-1]))
@@ -119,8 +123,12 @@ def ignite_f_decoupled(ini):
 
             # dt = dt_base * (0.9 + round(0.2 * np.random.random(), 2))
             dt = dt_base
-            if w_tracker * dt > 0.2:
+            # print("base:", dt)
+            if (w_tracker * dt) > 0.2:
                 dt = dt / 10
+            # print(w_tracker * dt_base)
+            # print("a:", dt)
+
             solver.integrate(solver.t + dt)
             gas.TPY = solver.y[0], P, solver.y[1:]
 
@@ -146,7 +154,12 @@ def ignite_f_decoupled(ini):
             # print('hs bac:', (hs_new - hs_org) / dt)
             # print('h ratio:', hs_dot / (hs_new - hs_org) * dt)
             # Update the sample
-            state_wdot = np.hstack([w_dot, hs_dot, (solver.y[0] - T_org) / dt])
+
+            # print("T_calc:", (solver.y[0] - T_org) / dt)
+            # print("T_dot:", T_dot)
+
+            # state_wdot = np.hstack([w_dot, hs_dot, (solver.y[0] - T_org) / dt])
+            state_wdot = np.hstack([w_dot, hs_dot, T_dot])
             train_wdot.append(state_wdot)
 
             if ((res.max() < 1e2 and (solver.t / dt) > 100)):
@@ -155,18 +168,18 @@ def ignite_f_decoupled(ini):
                 #                                 or gas['H2'].X > 0.997):
                 # if res.max() < 1e-5:
                 break
-
+        # print("end:", solver.t)
     return train_c, train_wdot, phi
 
 
 def dataGeneration():
     # T = np.random.rand(2) * 1200 + 1001
-    T = np.linspace(1001, 2201, 20)
+    T = np.linspace(1201, 2201, 12)
 
     # n_s = np.random.rand(10) * 30 + 0.1
     # n_l = np.random.rand(30) * 30
     n_s = np.linspace(0.1, 8, 20)
-    n_l = np.linspace(0.3, 30, 30)
+    n_l = np.linspace(0.3, 30, 10)
 
     n = np.unique(np.concatenate((n_s, n_l)))[1:]
     # n = n[n > 0.4]
@@ -216,8 +229,8 @@ def dataGeneration():
     e = time.time()
     print('saving {} takes {}s'.format(train_wdot.shape, (e - s)))
     # plt.plot(phi)
-    return phi
-    # return train_wdot
+    # return train_org
+    return train_wdot
 
 
 def ignite_post(ini):

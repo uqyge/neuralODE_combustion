@@ -78,9 +78,9 @@ df_wdot_ode = pd.DataFrame(out_ode, columns=gas.species_names + ['Hs', 'T'])
 
 #%%
 # Compare ode and dnn
-sp = 'H2O2'
+sp = 'H2O'
 s = 50
-e = 300
+e = 500
 plt.subplot(1, 2, 1)
 plt.plot(df_wdot_ode[sp][s:e], label='ode')
 plt.plot(df_wdot_dnn[sp][s:e], label='dnn')

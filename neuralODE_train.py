@@ -84,7 +84,7 @@ for n_neuron in [64]:
             ep_size = 0
             base = 2
             clc = 2
-            for i in range(7):
+            for i in range(8):
                 ep_size += base*clc**(i)
             print(ep_size)
             epochs, c_len = ep_size, base
