@@ -16,9 +16,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
 
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
-# columns = org.columns
-species = columns
-input_features = columns.drop(['AR', 'dt', 'f', 'cp', 'Rho'])
+input_features = columns
 labels = input_features
 
 # %%
@@ -77,7 +75,6 @@ baseModel.summary()
 
 plot_model(baseModel, to_file="img/eulerModel.png")
 baseModel.save('eulerModel.h5')
-
 
 # %%
 dim_input = len(input_features)

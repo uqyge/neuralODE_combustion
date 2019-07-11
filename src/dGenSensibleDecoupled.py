@@ -22,6 +22,7 @@ class ReactorOde:
 
         # State vector is [T, Y_1, Y_2, ... Y_K]
         self.gas.set_unnormalized_mass_fractions(y[1:])
+        # self.gas.Y = y[1:]
         self.gas.TP = y[0], self.P
         rho = self.gas.density
 
@@ -39,12 +40,11 @@ def ignite_f_decoupled(ini):
     train_c = []
     train_wdot = []
     phi = []
-    # tmp = []
 
     T_ref = 298.15
     t_end = 1e-3
 
-    dt_dict = [1e-6]
+    dt_dict = [1e-7]
     for dt in dt_dict:
         if fuel == 'H2':
             try:
@@ -57,48 +57,62 @@ def ignite_f_decoupled(ini):
         if fuel == 'CH4':
             gas = ct.Solution('../data/grimech12.cti')
             gas_h0 = ct.Solution('../data/grimech12.cti')
-            # gas = ct.Solution('gri30.xml')
 
         P = ct.one_atm
-        # rdn = np.random.rand(2)
         gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:3.76'
-        # + ',H:{},O:{}'.format(rdn[0], rdn[1])
 
-        # gas.TPX = temp, P, fuel + ':' + str(n_fuel) + ',O2:1,N2:3.728'
         # print(gas.get_equivalence_ratio())
         phi.append(gas.get_equivalence_ratio())
         Ha = np.dot(gas.partial_molar_enthalpies,
                     gas.Y / gas.molecular_weights)
+
         gas_h0.TPY = T_ref, P, gas.Y
         hc = (gas_h0.partial_molar_enthalpies / gas_h0.molecular_weights)
 
         y0 = np.hstack((gas.T, gas.Y))
         ode = ReactorOde(gas)
         solver = scipy.integrate.ode(ode)
-        solver.set_integrator('vode', method='bdf', with_jacobian=True)
+        solver.set_integrator('vode',
+                              atol=1e-12,
+                              rtol=1e-10,
+                              method='adams',
+                              with_jacobian=True)
         solver.set_initial_value(y0, 0.0)
 
+        v = 120
         dt_base = dt
-        v = 5e6
         while solver.successful() and solver.t < t_end:
             if solver.t == 0:
                 # dt_ini = np.random.random_sample() * dt_base
                 dt_ini = dt_base
                 solver.integrate(solver.t + dt_ini)
                 gas.TPY = solver.y[0], P, solver.y[1:]
+                # gas.TP = solver.y[0], P
+                # gas.set_unnormalized_mass_fractions(solver.y[1:])
 
-            # convection
-            tmp = gas.Y
-            tmp[1] = max(tmp[1] - gas.density * v * dt, 1e-10)
-            tmp[3] = max(tmp[3] - gas.density * v * dt, 1e-10)
-            tmp[6] = max(tmp[6] - gas.density * v * dt, 1e-10)
-            # gas.Y = tmp
-            gas.set_unnormalized_mass_fractions(tmp)
-            # print("b:", dt)
+            # # sensible enthalpy
+            # gas_h0.TPY = T_ref, P, gas.Y
+            # H0 = np.dot(gas_h0.partial_molar_enthalpies,
+            #             (gas_h0.Y / gas_h0.molecular_weights))
+            # Ha = np.dot(gas.partial_molar_enthalpies,
+            #             gas.Y / gas.molecular_weights)
+            # hs_org = (Ha - H0)
+
+            # # convection
+            # convY = np.maximum(gas.Y - gas.Y * v * dt, 1e-20)
+            # convT = gas.T - hs_org * v * dt / gas.cp
+            # convP = gas.P - gas.P * v * dt
+            # gas.TP = convT, convP
+            # # gas.set_unnormalized_mass_fractions(convY)
+            # if(v>0){
+
+            # }
 
             gas_h0.TPY = T_ref, P, gas.Y
             H0 = np.dot(gas_h0.partial_molar_enthalpies,
                         (gas_h0.Y / gas_h0.molecular_weights))
+            # Ha = np.dot(gas.partial_molar_enthalpies,
+            #             gas.Y / gas.molecular_weights)
             hs_org = (Ha - H0)
             hs_density = hs_org * gas.density
 
@@ -108,8 +122,9 @@ def ignite_f_decoupled(ini):
             ])
             w_dot = gas[gas.species_names].net_production_rates
             # hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot) / gas.density
-            hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot)
+            hs_dot = np.dot(gas_h0.partial_molar_enthalpies, -w_dot)
             T_dot = hs_dot / (gas.density * gas.cp)
+            # T_dot = hs_dot / gas.cp
 
             T_org = gas.T
             w_tracker = max(abs(w_dot[:-1] / gas.concentrations[:-1]))
@@ -131,8 +146,13 @@ def ignite_f_decoupled(ini):
 
             solver.integrate(solver.t + dt)
             gas.TPY = solver.y[0], P, solver.y[1:]
-
             gas_h0.TPY = T_ref, P, gas.Y
+
+            # gas.TP = solver.y[0], P
+            # gas.set_unnormalized_mass_fractions(solver.y[1:])
+            # gas_h0.TP = T_ref, P
+            # gas_h0.set_unnormalized_mass_fractions(solver.y[1:])
+
             H0 = np.dot(gas_h0.partial_molar_enthalpies,
                         (gas_h0.Y / gas_h0.molecular_weights))
             hs_new = (Ha - H0)
@@ -148,38 +168,29 @@ def ignite_f_decoupled(ini):
             res = abs(
                 state_res[state_org != 0] / state_org[state_org != 0]) / dt
 
-            # print('...')
-            # print('hs dot:', Hsdot)
-            # hs_dot = (hs_new - hs_org) / dt
-            # print('hs bac:', (hs_new - hs_org) / dt)
-            # print('h ratio:', hs_dot / (hs_new - hs_org) * dt)
-            # Update the sample
-
-            # print("T_calc:", (solver.y[0] - T_org) / dt)
-            # print("T_dot:", T_dot)
-
-            # state_wdot = np.hstack([w_dot, hs_dot, (solver.y[0] - T_org) / dt])
             state_wdot = np.hstack([w_dot, hs_dot, T_dot])
             train_wdot.append(state_wdot)
 
+            # add convection after reaction
+            gas.Y = gas.Y - T_dot * 1e-8 * v * dt * gas.Y
+            # gas.TP = gas.T - T_dot * 1e-8 * v * dt * gas.T, P
+
             if ((res.max() < 1e2 and (solver.t / dt) > 100)):
-                # if ((res.max() < 1 and
-                #      (solver.t / dt) > 50)) or (gas['H2'].X < 0.003
-                #                                 or gas['H2'].X > 0.997):
-                # if res.max() < 1e-5:
                 break
-        # print("end:", solver.t)
+
     return train_c, train_wdot, phi
 
 
 def dataGeneration():
+    dask.config.set(scheduler='processes')
+
     # T = np.random.rand(2) * 1200 + 1001
-    T = np.linspace(1201, 2201, 12)
+    T = np.linspace(1201, 2201, 1)
 
     # n_s = np.random.rand(10) * 30 + 0.1
     # n_l = np.random.rand(30) * 30
-    n_s = np.linspace(0.1, 8, 20)
-    n_l = np.linspace(0.3, 30, 10)
+    n_s = np.linspace(2, 8, 1)
+    n_l = np.linspace(0.3, 30, 1)
 
     n = np.unique(np.concatenate((n_s, n_l)))[1:]
     # n = n[n > 0.4]
@@ -188,8 +199,6 @@ def dataGeneration():
     XX, YY = np.meshgrid(T, n)
     ini = np.concatenate((XX.reshape(-1, 1), YY.reshape(-1, 1)), axis=1)
     # print(ini)
-
-    dask.config.set(scheduler='processes')
 
     s = time.time()
 
@@ -211,9 +220,9 @@ def dataGeneration():
 
     columnNames = gas.species_names
     columnNames = columnNames + ['Hs']
-    columnNames = columnNames + ['T']
+    columnNames = columnNames + ['Temp']
     wdotNames = columnNames
-    columnNames = columnNames + ['Rho']
+    columnNames = columnNames + ['rho']
     columnNames = columnNames + ['cp']
     columnNames = columnNames + ['dt']
     columnNames = columnNames + ['f']
@@ -223,14 +232,15 @@ def dataGeneration():
 
     s = time.time()
 
-    train_org.to_hdf('tmp.h5', key='org', format='table')
+    train_org.to_hdf('tmp.h5', key='c', format='table')
     train_wdot.to_hdf('tmp.h5', key='wdot', format='table')
-    print("H2O2 wdot min:", train_wdot['H2O2'].min())
+    sp = "H2O2"
+    print("{} wdot min:{}".format(sp, train_wdot[sp].min()))
     e = time.time()
     print('saving {} takes {}s'.format(train_wdot.shape, (e - s)))
     # plt.plot(phi)
     # return train_org
-    return train_wdot
+    return train_org, train_wdot
 
 
 def ignite_post(ini):
@@ -346,25 +356,14 @@ def ignite_post(ini):
 
 
 def ignite_step(ini, gas, gas_h0):
-    temp = ini[0]
+    temp, Y_ini, fuel, dt = ini
     n_fuel = -1
-    Y_ini = ini[1]
-    fuel = ini[2]
+
+    T_ref = 298.15
+    t_end = dt
 
     train_c = []
     train_wdot = []
-
-    T_ref = 298.15
-
-    dt = ini[3]
-    t_end = dt
-
-    # try:
-    #     gas = ct.Solution('../data/connaire.cti')
-    #     gas_h0 = ct.Solution('../data/connaire.cti')
-    # except:
-    #     gas = ct.Solution('./data/connaire.cti')
-    #     gas_h0 = ct.Solution('./data/connaire.cti')
 
     P = ct.one_atm
 
@@ -379,43 +378,27 @@ def ignite_step(ini, gas, gas_h0):
 
     while solver.successful() and solver.t < t_end:
 
-        # Ha = np.dot(gas.partial_molar_enthalpies,
-        #             gas.Y / gas.molecular_weights)
-        # print('t:{}'.format(solver.t))
         gas_h0.TPY = T_ref, P, gas.Y
         H0 = np.dot(gas_h0.partial_molar_enthalpies,
                     (gas_h0.Y / gas_h0.molecular_weights))
-        # hs = (Ha - H0) * gas.density
         hs_org = (Ha - H0)
         hs_density = hs_org * gas.density
-        # print("enthalpy of formation @{}:   {}".format(gas_h0.T, h0))
-        # print("absolute enthalpy @{}:   {}".format(gas.T, ha))
-        # print("sensible enthalpy org @{}:   {}".format(gas.T, hs))
 
         w_dot = gas[gas.species_names].net_production_rates
-        T_org = gas.T
-        hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot)
+        hs_dot = np.dot(gas_h0.partial_molar_enthalpies, -w_dot)
+        T_dot = hs_dot / (gas.density * gas.cp)
 
-        state_c = np.hstack([
-            gas[gas.species_names].concentrations, hs_org, gas.T, gas.density,
-            gas.cp, dt, n_fuel
-        ])
+        state_c = np.hstack(
+            [gas[gas.species_names].concentrations, hs_org, gas.T])
         train_c.append(state_c)
 
         solver.integrate(solver.t + dt)
         gas.TPY = solver.y[0], P, solver.y[1:]
-        # Ha = np.dot(gas.partial_molar_enthalpies,
-        #             gas.Y / gas.molecular_weights)
-
         gas_h0.TPY = T_ref, P, gas.Y
         H0 = np.dot(gas_h0.partial_molar_enthalpies,
                     (gas_h0.Y / gas_h0.molecular_weights))
-        hs_new = (Ha - H0)
-        hs_density = hs_new * gas.density
 
-        # Update the sample
-        # hs_dot = (hs_new - hs_org) / dt
-        state_wdot = np.hstack([w_dot, hs_dot, (gas.T - T_org) / dt])
+        state_wdot = np.hstack([w_dot, hs_dot, T_dot])
         train_wdot.append(state_wdot)
 
     return train_c, train_wdot
@@ -438,7 +421,9 @@ def test_data(temp, n_fuel, columns, dt):
 
 
 if __name__ == '__main__':
-    t_wdot = dataGeneration()
+    t_org, t_wdot = dataGeneration()
+    # plt.plot(t_org['T'])
+    plt.plot(t_wdot['H2O2'])
     # c, w = ignite_post([1401, 2, 'H2', 1e-6])
 
     # try:

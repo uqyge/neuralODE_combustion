@@ -10,12 +10,14 @@ from sklearn.model_selection import train_test_split
 from src.dataScaling import data_scaler
 
 # %%
-dataPath = 'src/tmp.h5'
-ddOrg = dd.read_hdf(dataPath, key='org')
+dataPath = 'src/H2DB.h5'
+ddOrg = dd.read_hdf(dataPath, key='c')
 ddWdot = dd.read_hdf(dataPath, key='wdot')
 
 # %%
-input_features = ddOrg.columns.drop(['AR', 'dt', 'f', 'cp', 'Rho'])
+input_features = [
+    'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
+]
 labels = input_features
 
 org = ddOrg.compute()
@@ -41,6 +43,6 @@ x_input, y_label, in_scaler, out_scaler = read_h5_data(
 x_train, x_test, y_train, y_test = train_test_split(x_input,
                                                     y_label,
                                                     test_size=0.05)
-pickle.dump((org.columns, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
+pickle.dump((labels, in_scaler, out_scaler), open('./data/tmp.pkl', 'wb'))
 
 #%%

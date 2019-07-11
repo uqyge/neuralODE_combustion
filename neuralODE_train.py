@@ -6,10 +6,12 @@ import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 import tensorflow
 import tensorflow.keras as keras
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
+
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Activation, Dense, Input
@@ -104,8 +106,8 @@ for n_neuron in [64]:
                 batch_size=batch_size,
                 validation_split=vsplit,
                 verbose=2,
-                callbacks=callbacks_list1,
-                shuffle=True
+                callbacks=callbacks_list2,
+                shuffle=False
             )
 
             # fit the model
@@ -130,10 +132,10 @@ print(r2)
 # %%
 pred_df = pd.DataFrame(predict_val, columns=labels)
 test_df = pd.DataFrame(y_test, columns=labels)
-spl_idx = pred_df.sample(frac=0.1).index
-# sp='O'
+spl_idx = pred_df.sample(frac=0.01).index
+
 for sp in labels:
-    x = pred_df.sample(frac=0.1)
+    x = pred_df.sample(frac=0.01)
     plt.plot(pred_df.iloc[spl_idx][sp], test_df.iloc[spl_idx][sp], 'rd', ms=1)
     plt.title('{} r2 ={}'.format(sp, r2_score(pred_df[sp], test_df[sp])))
     plt.savefig('fig/{}_r2'.format(sp))
