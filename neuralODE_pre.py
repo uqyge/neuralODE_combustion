@@ -10,7 +10,9 @@ from sklearn.model_selection import train_test_split
 from src.dataScaling import data_scaler
 
 # %%
-dataPath = 'src/H2DB.h5'
+# dataPath = 'src/H2DB.h5'
+dataPath = 'src/H2DB_L.h5'
+
 ddOrg = dd.read_hdf(dataPath, key='c')
 ddWdot = dd.read_hdf(dataPath, key='wdot')
 

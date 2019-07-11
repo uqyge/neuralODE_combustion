@@ -1,5 +1,5 @@
 # %%
-from scipy.integrate import odeint
+import os
 import pickle
 import pandas as pd
 import numpy as np
@@ -7,13 +7,16 @@ import matplotlib.pyplot as plt
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense, Activation
 from tensorflow.keras.models import Sequential, load_model
-# from src.dataGen import test_data
-from src.dataGenSensible import test_data
 
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
+
+if os.path.exists('eulerModel.h5'):
+    os.remove('eulerModel.h5')
+if os.path.exists('rk4Model.h5'):
+    os.remove('rk4Model.h5')
 
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 input_features = columns
@@ -22,8 +25,6 @@ labels = input_features
 # %%
 out_m = out_scaler.std.mean_.astype('float32')
 out_s = out_scaler.std.scale_.astype('float32')
-# out_m = (new[labels]-org[labels]).div(org.dt,axis=0).mean().values
-# out_s = (new[labels]-org[labels]).div(org.dt,axis=0).std().values
 
 model_inv = Sequential(name='inv')
 model_inv.add(

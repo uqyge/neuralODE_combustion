@@ -106,7 +106,7 @@ for n_neuron in [64]:
                 batch_size=batch_size,
                 validation_split=vsplit,
                 verbose=2,
-                callbacks=callbacks_list2,
+                callbacks=callbacks_list1,
                 shuffle=False
             )
 

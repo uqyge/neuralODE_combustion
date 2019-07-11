@@ -14,8 +14,8 @@ species = columns
 input_features = columns
 labels = input_features
 
-# path = './of/last'
-path = './of/init'
+path = './of/ofMech'
+# path = './of/init'
 # path = './of/half'
 # path = './of/noDiff'
 
@@ -29,7 +29,7 @@ out_c = []
 for i in range(len(df_of_y)):
     if not (i % 1000):
         print(i)
-    T = df_of_y['T'].values[i] - 6
+    T = df_of_y['Temp'].values[i]
     Y_ini = df_of_y[gas.species_names].values[i]
     dt = df_of_y['dt'].values[i]
     a, b = ignite_step([T, Y_ini, 'H2', dt], gas, gas_h0)
@@ -44,7 +44,7 @@ in_f_base = [
     'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
 ]
 model_base = keras.models.load_model('./base_neuralODE_n64_b5_fcTrue.h5')
-df_of_c['Temp'] = df_of_c['T']
+# df_of_c['Temp'] = df_of_c['T']
 out_base = model_base.predict(in_scaler.transform(df_of_c[in_f_base]))
 df_wdot_dnn_base = pd.DataFrame(out_scaler.inverse_transform(out_base),
                                 columns=labels)
@@ -163,4 +163,7 @@ plt.plot(df_of_y['T'], df_of_y[gas.species_names].sum(1))
 #%%
 print(t_org['H2O2'].max(), df_of_c['H2O2'].max())
 
+#%%
+plt.plot(df_of_c['RR_Hs'])
+plt.plot(df_wdot_dnn['Hs'])
 #%%
