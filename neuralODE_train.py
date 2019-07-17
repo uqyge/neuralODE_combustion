@@ -28,11 +28,12 @@ n_neuron = 100
 scale = 3
 branches = 3
 fc=True
+dataSet = dataPath.split('/')[1].split('.')[0]
 
 for n_neuron in [64]:
     for branches in [5]:
         for fc in [True]:
-            m_name='n{}_b{}_fc{}'.format(n_neuron,branches,fc)
+            m_name='{}_n{}_b{}_fc{}'.format(dataSet,n_neuron,branches,fc)
             dim_input = x_train.shape[1]
             dim_label = y_train.shape[1]
 
@@ -86,7 +87,7 @@ for n_neuron in [64]:
             ep_size = 0
             base = 2
             clc = 2
-            for i in range(8):
+            for i in range(4):
                 ep_size += base*clc**(i)
             print(ep_size)
             epochs, c_len = ep_size, base
@@ -94,8 +95,8 @@ for n_neuron in [64]:
                                     steps_per_epoch=np.ceil(epoch_size/batch_size),
                                     cycle_length=c_len, lr_decay=0.8, mult_factor=2)
 
-            callbacks_list1 = [checkpoint, tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name))]
-            callbacks_list2 = [checkpoint, schedule,tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name))]
+            callbacks_list1 = [checkpoint, tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name),histogram_freq=0, profile_batch = 0)]
+            callbacks_list2 = [checkpoint, schedule,tensorflow.keras.callbacks.TensorBoard('./tb/{}'.format(m_name),histogram_freq=0, profile_batch = 0)]
 
             model.load_weights(filepath)
 

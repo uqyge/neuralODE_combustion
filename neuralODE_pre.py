@@ -10,15 +10,32 @@ from sklearn.model_selection import train_test_split
 from src.dataScaling import data_scaler
 
 # %%
-# dataPath = 'src/H2DB.h5'
-dataPath = 'src/H2DB_L.h5'
+dataPath = 'data/CH4DB.h5'
 
 ddOrg = dd.read_hdf(dataPath, key='c')
 ddWdot = dd.read_hdf(dataPath, key='wdot')
 
 # %%
+# input_features = [
+#     'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
+# ]
 input_features = [
-    'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
+    "CH4",
+    "CH3",
+    "CH3O",
+    "CH2O",
+    "HCO",
+    "CO2",
+    "CO",
+    "H2",
+    "H",
+    "O2",
+    "O",
+    "OH",
+    "HO2",
+    "H2O",
+    "H2O2",
+    "N2",
 ]
 labels = input_features
 

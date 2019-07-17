@@ -7,7 +7,7 @@ import cantera as ct
 import pickle
 from sklearn.metrics import r2_score
 from src.dGenSensibleDecoupled import ignite_step
-
+import plotly.express as px
 #%%
 columns, in_scaler, out_scaler = pickle.load(open('data/tmp.pkl', 'rb'))
 species = columns
