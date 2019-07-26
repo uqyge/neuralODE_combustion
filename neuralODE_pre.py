@@ -11,6 +11,7 @@ from src.dataScaling import data_scaler
 
 # %%
 dataPath = 'data/CH4DB.h5'
+# dataPath = 'data/H2DB_L.h5'
 
 ddOrg = dd.read_hdf(dataPath, key='c')
 ddWdot = dd.read_hdf(dataPath, key='wdot')
@@ -20,23 +21,10 @@ ddWdot = dd.read_hdf(dataPath, key='wdot')
 #     'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
 # ]
 input_features = [
-    "CH4",
-    "CH3",
-    "CH3O",
-    "CH2O",
-    "HCO",
-    "CO2",
-    "CO",
-    "H2",
-    "H",
-    "O2",
-    "O",
-    "OH",
-    "HO2",
-    "H2O",
-    "H2O2",
-    "N2",
+    "CH4", "CH3", "CH3O", "CH2O", "HCO", "CO2", "CO", "H2", "H", "O2", "O",
+    "OH", "HO2", "H2O", "H2O2", "N2", 'Hs', 'Temp'
 ]
+
 labels = input_features
 
 org = ddOrg.compute()
