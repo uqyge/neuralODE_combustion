@@ -1,12 +1,13 @@
 # %%
 import os
-import numpy as np
-import pandas as pd
-import dask.dataframe as dd
-import matplotlib.pyplot as plt
 import pickle
 
+import dask.dataframe as dd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
+
 from src.dataScaling import data_scaler
 
 # %%

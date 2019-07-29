@@ -1,4 +1,5 @@
 # data
+diffusion_flame_batch_data/
 *.h5
 *.pkl
 

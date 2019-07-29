@@ -1,15 +1,15 @@
 # %%
-import os, shutil, pickle
+import os
+import pickle
+import shutil
 
 import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 import tensorflow
 import tensorflow.keras as keras
 from sklearn.metrics import r2_score
-
 from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Activation, Dense, Input
