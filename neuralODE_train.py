@@ -161,12 +161,12 @@ pred_df = pd.DataFrame(predict_val, columns=labels)
 test_df = pd.DataFrame(y_test, columns=labels)
 spl_idx = pred_df.sample(frac=0.01).index
 
-for sp in labels:
-    x = pred_df.sample(frac=0.01)
-    plt.plot(pred_df.iloc[spl_idx][sp], test_df.iloc[spl_idx][sp], 'rd', ms=1)
-    plt.title('{} r2 ={}'.format(sp, r2_score(pred_df[sp], test_df[sp])))
-    plt.savefig('fig/{}_r2'.format(sp))
-    plt.show()
+# for sp in labels:
+#     x = pred_df.sample(frac=0.01)
+#     plt.plot(pred_df.iloc[spl_idx][sp], test_df.iloc[spl_idx][sp], 'rd', ms=1)
+#     plt.title('{} r2 ={}'.format(sp, r2_score(pred_df[sp], test_df[sp])))
+#     plt.savefig('fig/{}_r2'.format(sp))
+#     plt.show()
 
 # %%
 sp = 'H2O2'

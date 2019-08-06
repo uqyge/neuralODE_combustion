@@ -122,6 +122,7 @@ def ignite_f_decoupled(ini):
             ])
             w_dot = gas[gas.species_names].net_production_rates
             # hs_dot = np.dot(gas.partial_molar_enthalpies, -w_dot) / gas.density
+            # BUG
             hs_dot = np.dot(gas_h0.partial_molar_enthalpies, -w_dot)
             T_dot = hs_dot / (gas.density * gas.cp)
             # T_dot = hs_dot / gas.cp

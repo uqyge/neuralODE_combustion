@@ -2,6 +2,7 @@
 diffusion_flame_batch_data/
 *.h5
 *.pkl
+*.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
