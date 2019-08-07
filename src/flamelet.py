@@ -24,12 +24,11 @@ from molmass import Formula
 
 #%%
 # Create directory for output data files
-# data_directory = 'diffusion_flame_batch_data/'
-# if os.path.exists(data_directory):
+data_directory = "diffusion_flame_batch_data/"
+if not os.path.exists(data_directory):
+    os.makedirs(data_directory)
+    # if os.path.exists(data_directory):
 #     shutil.rmtree(data_directory)
-#     os.makedirs(data_directory)
-
-# if not os.path.exists(data_directory):
 #     os.makedirs(data_directory)
 
 
@@ -45,8 +44,8 @@ temperature_limit_extinction = 900  # K
 
 def interrupt_extinction(t):
     if np.max(f.T) < temperature_limit_extinction:
-        raise FlameExtinguished('Flame extinguished')
-    return 0.
+        raise FlameExtinguished("Flame extinguished")
+    return 0.0
 
 
 def Hs_T_rates(f):
@@ -54,37 +53,42 @@ def Hs_T_rates(f):
     T_org = copy.deepcopy(f.T)
     T_ref = 298.15
 
-    hs_wdot = np.asarray([
-        np.dot(pm, -net) for pm, net in zip(f.partial_molar_enthalpies.T,
-                                            f.net_production_rates.T)
-    ]).reshape(-1, 1)
+    hs_wdot = np.asarray(
+        [
+            np.dot(pm, -net)
+            for pm, net in zip(f.partial_molar_enthalpies.T, f.net_production_rates.T)
+        ]
+    ).reshape(-1, 1)
 
     T_wdot = hs_wdot / (f.density * f.cp).reshape(-1, 1)
 
-    Ha = np.asarray([
-        np.dot(pm, ha_Y / f.gas.molecular_weights)
-        for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
-    ])
+    Ha = np.asarray(
+        [
+            np.dot(pm, ha_Y / f.gas.molecular_weights)
+            for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
+        ]
+    )
 
-    f.set_profile('T', normalized_grid, f.T / f.T * T_ref)
+    f.set_profile("T", normalized_grid, f.T / f.T * T_ref)
     gas_ref = copy.deepcopy(f.partial_molar_enthalpies)
 
-    H0 = np.asarray([
-        np.dot(pm, h0_Y / f.gas.molecular_weights)
-        for pm, h0_Y in zip(gas_ref.T, f.Y.T)
-    ])
+    H0 = np.asarray(
+        [
+            np.dot(pm, h0_Y / f.gas.molecular_weights)
+            for pm, h0_Y in zip(gas_ref.T, f.Y.T)
+        ]
+    )
 
     # set temperature back
-    f.set_profile('T', normalized_grid, T_org)
+    f.set_profile("T", normalized_grid, T_org)
     grid = normalized_grid.reshape(-1, 1)
 
     return hs_wdot, T_wdot, (Ha - H0).reshape(-1, 1), grid
 
 
-#%% PART 1: INITIALIZATION
-
+# INITIALIZATION
 # reaction_mechanism = 'gri30.xml'
-reaction_mechanism = './data/gri12/grimech12.cti'
+reaction_mechanism = "./data/gri12/grimech12.cti"
 gas = ct.Solution(reaction_mechanism)
 width = 0.02  # 18mm wide
 grid_ini = width * np.linspace(0, 1, 20)
@@ -98,106 +102,104 @@ f.P = ct.one_atm  # 1 bar
 # f.fuel_inlet.mdot = 0.25  # kg/m^2/s
 f.fuel_inlet.mdot = 0.05  # kg/m^2/s
 # f.fuel_inlet.X = 'CH4:0.00278,O2:0.00695,N2:0.02616'
-f.fuel_inlet.Y = 'CH4:1'
+f.fuel_inlet.Y = "CH4:1"
 f.fuel_inlet.T = 300  # K
 # f.oxidizer_inlet.mdot = 0.5  # kg/m^2/s
 f.oxidizer_inlet.mdot = 0.1  # kg/m^2/s
-f.oxidizer_inlet.Y = 'O2:0.23,N2:0.77'
+f.oxidizer_inlet.Y = "O2:0.23,N2:0.77"
 # f.oxidizer_inlet.X = 'O2:0.00695,N2:0.02616'
 f.oxidizer_inlet.T = 300  # K
 
 # Set refinement parameters, if used
-f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
-# f.set_refine_criteria(ratio=100.0, slope=0.2, curve=0.5, prune=0.0001)
+# f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
+f.set_refine_criteria(ratio=100.0, slope=0.2, curve=0.5, prune=0.0001)
 
 f.set_interrupt(interrupt_extinction)
 
 # Initialize and solve
-print('Creating the initial solution')
+print("Creating the initial solution")
 f.solve(loglevel=0, refine_grid=False, auto=True)
 
 # Save to data directory
-file_name = 'initial_solution.xml'
-f.save(data_directory + file_name,
-       name='solution',
-       description='Cantera version ' + ct.__version__ +
-       ', reaction mechanism ' + reaction_mechanism)
+file_name = "initial_solution.xml"
+f.save(
+    data_directory + file_name,
+    name="solution",
+    description="Cantera version "
+    + ct.__version__
+    + ", reaction mechanism "
+    + reaction_mechanism,
+)
 
 
-#%% STRAIN RATE LOOP
+# STRAIN RATE LOOP
 def flamelet_gen(i):
     # Compute counterflow diffusion flames at increasing strain rates at 1 bar
     # The strain rate is assumed to increase by 25% in each step until the flame is
     # extinguished
-    strain_factor = 1.02**i
+    strain_factor = 1.2 ** i
 
-    exp_d_a = -1. / 2.
-    exp_u_a = 1. / 2.
-    exp_V_a = 1.
-    exp_lam_a = 2.
-    exp_mdot_a = 1. / 2.
+    exp_d_a = -1.0 / 2.0
+    exp_u_a = 1.0 / 2.0
+    exp_V_a = 1.0
+    exp_lam_a = 2.0
+    exp_mdot_a = 1.0 / 2.0
 
     # Restore initial solution
-    file_name = 'initial_solution.xml'
-    f.restore(filename=data_directory + file_name, name='solution', loglevel=0)
+    file_name = "initial_solution.xml"
+    f.restore(filename=data_directory + file_name, name="solution", loglevel=0)
 
     # Do the strain rate loop
     if np.max(f.T) > temperature_limit_extinction:
-        print('strain rate iteration', i)
+        print("strain rate iteration", i)
         # Create an initial guess based on the previous solution
         # Update grid
-        f.flame.grid *= strain_factor**exp_d_a
+        f.flame.grid *= strain_factor ** exp_d_a
         normalized_grid = f.grid / (f.grid[-1] - f.grid[0])
         # Update mass fluxes
-        f.fuel_inlet.mdot *= strain_factor**exp_mdot_a
-        f.oxidizer_inlet.mdot *= strain_factor**exp_mdot_a
+        f.fuel_inlet.mdot *= strain_factor ** exp_mdot_a
+        f.oxidizer_inlet.mdot *= strain_factor ** exp_mdot_a
         # Update velocities
-        f.set_profile('u', normalized_grid, f.u * strain_factor**exp_u_a)
-        f.set_profile('V', normalized_grid, f.V * strain_factor**exp_V_a)
+        f.set_profile("u", normalized_grid, f.u * strain_factor ** exp_u_a)
+        f.set_profile("V", normalized_grid, f.V * strain_factor ** exp_V_a)
         # Update pressure curvature
-        f.set_profile('lambda', normalized_grid,
-                      f.L * strain_factor**exp_lam_a)
+        f.set_profile("lambda", normalized_grid, f.L * strain_factor ** exp_lam_a)
         try:
             # Try solving the flame
             f.solve(loglevel=0, refine_grid=True)
-            file_name = 'strain_loop_' + format(i, '02d') + '.xml'
-            f.save(data_directory + file_name,
-                   name='solution',
-                   loglevel=1,
-                   description='Cantera version ' + ct.__version__ +
-                   ', reaction mechanism ' + reaction_mechanism)
+            file_name = "strain_loop_" + format(i, "02d") + ".xml"
+            f.save(
+                data_directory + file_name,
+                name="solution",
+                loglevel=1,
+                description="Cantera version "
+                + ct.__version__
+                + ", reaction mechanism "
+                + reaction_mechanism,
+            )
         except FlameExtinguished:
-            print('Flame extinguished')
+            print("Flame extinguished")
 
         except ct.CanteraError as e:
-            print('Error occurred while solving:', e)
+            print("Error occurred while solving:", e)
 
-    strain_max = f.strain_rate('max')
+    strain_max = f.strain_rate("max")
     print(strain_max)
 
     return strain_max
 
 
-#%% parallel running
-
-p = mp.Pool(mp.cpu_count())
-flamelet_range = [x for x in range(192)]
-p.map(flamelet_gen, flamelet_range)
-
-
-#%%
-def read_flamelet(i):
-    # print(i)
-    sp_names = f.gas.species_names
-    col_names = sp_names + ['Hs'] + ['Temp'] + ['id'] + ['grid'] + ['amax']
+# post processing
+def read_flamelet(paraIn):
+    i, col_names = paraIn
 
     c = np.empty((0, len(col_names)), float)
     wdot = np.empty((0, len(col_names)), float)
 
-    file_name = 'strain_loop_{0:02d}.xml'.format(i)
+    file_name = "strain_loop_{0:02d}.xml".format(i)
     print(file_name)
-    f.restore(filename=data_directory + file_name, name='solution', loglevel=0)
-    a_max = f.strain_rate('max')
+    f.restore(filename=data_directory + file_name, name="solution", loglevel=0)
+    a_max = f.strain_rate("max")
 
     w_mat = f.net_production_rates
     c_mat = f.concentrations
@@ -215,64 +217,96 @@ def read_flamelet(i):
     return wdot, c
 
 
-#%%
-wdot = np.vstack([read_flamelet(i)[0] for i in [1,2,3,4]])
-wdot.shape
-#%%
-n = 4
+#%% parallel running
+
+nRange = 20
 p = mp.Pool(mp.cpu_count())
-files = [x+1 for x in range(n)]
+flamelet_range = [x for x in range(nRange)]
+p.map(flamelet_gen, flamelet_range)
+
+#%%
+sp_names = f.gas.species_names
+col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
+
+n = len(os.listdir(data_directory)) - 1
+# p = mp.Pool(mp.cpu_count())
+files = [(x, col_names) for x in range(n)]
 # files = [1,2]
 raw = p.map(read_flamelet, files)
-wdot = np.vstack(raw[:][0])
-c = np.vstack((raw[:][1]))
-#%%
-for i in range(2):
-    print(i)
-    wdot, c = read_flamelet(i)
+wdot = np.vstack([out[0] for out in raw])
+c = np.vstack([out[1] for out in raw])
+
+
+print(wdot.shape)
 
 df_wdot = pd.DataFrame(wdot, columns=col_names)
 df_c = pd.DataFrame(c, columns=col_names)
 
-df_wdot['N2'] = 0
+df_wdot["N2"] = 0
 
-df_c.to_hdf('CH4_flt.h5', key='c', format='table')
-df_wdot.to_hdf('CH4_flt.h5', key='wdot', format='table')
+df_c.to_hdf("CH4_flt.h5", key="c", format="table")
+df_wdot.to_hdf("CH4_flt.h5", key="wdot", format="table")
 
-#%%
-px.scatter_3d(df_wdot.sample(frac=1),
-              x='grid',
-              y='id',
-              z='Hs',
-              title='concentration')
 # #%%
-# px.scatter_3d(df_wdot.sample(frac=0.001), x='grid', y='id', z='N2', title='rate')
-# # %%
-# print(n)
-# id_slt = 11
-# y_last = df_wdot.Hs[df_wdot.id == id_slt]
-# x_last = df_c.Temp[df_c.id == id_slt]
-# plt.plot(x_last, y_last)
+# px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="Hs", title="concentration")
+# # #%%
+# # px.scatter_3d(df_wdot.sample(frac=0.001), x='grid', y='id', z='N2', title='rate')
+# # # %%
+# # print(n)
+# # id_slt = 11
+# # y_last = df_wdot.Hs[df_wdot.id == id_slt]
+# # x_last = df_c.Temp[df_c.id == id_slt]
+# # plt.plot(x_last, y_last)
 
-#%%
-input_features = [
-    "H2", "H", "O", "O2", "OH", "H2O", "HO2", "H2O2", "C", "CH", "CH2",
-    "CH2(S)", "CH3", "CH4", "CO", "CO2", "HCO", "CH2O", "CH2OH", "CH3O",
-    "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO",
-    "HCCOH", "N2", 'Hs', 'Temp'
-]
-# df_c=org
-# df_wdot=wdot
+# #%%
+# input_features = [
+#     "H2",
+#     "H",
+#     "O",
+#     "O2",
+#     "OH",
+#     "H2O",
+#     "HO2",
+#     "H2O2",
+#     "C",
+#     "CH",
+#     "CH2",
+#     "CH2(S)",
+#     "CH3",
+#     "CH4",
+#     "CO",
+#     "CO2",
+#     "HCO",
+#     "CH2O",
+#     "CH2OH",
+#     "CH3O",
+#     "CH3OH",
+#     "C2H",
+#     "C2H2",
+#     "C2H3",
+#     "C2H4",
+#     "C2H5",
+#     "C2H6",
+#     "HCCO",
+#     "CH2CO",
+#     "HCCOH",
+#     "N2",
+#     "Hs",
+#     "Temp",
+# ]
+# # df_c=org
+# # df_wdot=wdot
 
-df_c['dt'] = 1e-8
+# df_c["dt"] = 1e-8
 
-model = tf.keras.models.load_model('eulerModel.h5')
-pred = model.predict(df_c[input_features + ['dt']], batch_size=1024 * 8)
-df_dnn = pd.DataFrame(pred, columns=input_features)
+# model = tf.keras.models.load_model("eulerModel.h5")
+# pred = model.predict(df_c[input_features + ["dt"]], batch_size=1024 * 8)
+# df_dnn = pd.DataFrame(pred, columns=input_features)
 
-df_dnn['grid'] = df_c['grid']
-df_dnn['id'] = df_c['id']
-#%%
-px.scatter_3d(df_dnn.sample(frac=0.01), x='grid', y='id', z='OH', title='dnn')
+# df_dnn["grid"] = df_c["grid"]
+# df_dnn["id"] = df_c["id"]
+# #%%
+# px.scatter_3d(df_dnn.sample(frac=0.01), x="grid", y="id", z="OH", title="dnn")
 
-#%%
+# #%%
+
