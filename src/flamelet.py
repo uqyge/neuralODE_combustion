@@ -53,31 +53,25 @@ def Hs_T_rates(f):
     T_org = copy.deepcopy(f.T)
     T_ref = 298.15
 
-    hs_wdot = np.asarray(
-        [
-            np.dot(pm, -net)
-            for pm, net in zip(f.partial_molar_enthalpies.T, f.net_production_rates.T)
-        ]
-    ).reshape(-1, 1)
+    hs_wdot = np.asarray([
+        np.dot(pm, -net) for pm, net in zip(f.partial_molar_enthalpies.T,
+                                            f.net_production_rates.T)
+    ]).reshape(-1, 1)
 
     T_wdot = hs_wdot / (f.density * f.cp).reshape(-1, 1)
 
-    Ha = np.asarray(
-        [
-            np.dot(pm, ha_Y / f.gas.molecular_weights)
-            for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
-        ]
-    )
+    Ha = np.asarray([
+        np.dot(pm, ha_Y / f.gas.molecular_weights)
+        for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
+    ])
 
     f.set_profile("T", normalized_grid, f.T / f.T * T_ref)
     gas_ref = copy.deepcopy(f.partial_molar_enthalpies)
 
-    H0 = np.asarray(
-        [
-            np.dot(pm, h0_Y / f.gas.molecular_weights)
-            for pm, h0_Y in zip(gas_ref.T, f.Y.T)
-        ]
-    )
+    H0 = np.asarray([
+        np.dot(pm, h0_Y / f.gas.molecular_weights)
+        for pm, h0_Y in zip(gas_ref.T, f.Y.T)
+    ])
 
     # set temperature back
     f.set_profile("T", normalized_grid, T_org)
@@ -111,8 +105,8 @@ f.oxidizer_inlet.Y = "O2:0.23,N2:0.77"
 f.oxidizer_inlet.T = 300  # K
 
 # Set refinement parameters, if used
-# f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
-f.set_refine_criteria(ratio=100.0, slope=0.2, curve=0.5, prune=0.0001)
+f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
+# f.set_refine_criteria(ratio=100.0, slope=0.2, curve=0.5, prune=0.0001)
 
 f.set_interrupt(interrupt_extinction)
 
@@ -125,10 +119,8 @@ file_name = "initial_solution.xml"
 f.save(
     data_directory + file_name,
     name="solution",
-    description="Cantera version "
-    + ct.__version__
-    + ", reaction mechanism "
-    + reaction_mechanism,
+    description="Cantera version " + ct.__version__ + ", reaction mechanism " +
+    reaction_mechanism,
 )
 
 
@@ -137,7 +129,7 @@ def flamelet_gen(i):
     # Compute counterflow diffusion flames at increasing strain rates at 1 bar
     # The strain rate is assumed to increase by 25% in each step until the flame is
     # extinguished
-    strain_factor = 1.2 ** i
+    strain_factor = 1.004**i
 
     exp_d_a = -1.0 / 2.0
     exp_u_a = 1.0 / 2.0
@@ -154,16 +146,17 @@ def flamelet_gen(i):
         print("strain rate iteration", i)
         # Create an initial guess based on the previous solution
         # Update grid
-        f.flame.grid *= strain_factor ** exp_d_a
+        f.flame.grid *= strain_factor**exp_d_a
         normalized_grid = f.grid / (f.grid[-1] - f.grid[0])
         # Update mass fluxes
-        f.fuel_inlet.mdot *= strain_factor ** exp_mdot_a
-        f.oxidizer_inlet.mdot *= strain_factor ** exp_mdot_a
+        f.fuel_inlet.mdot *= strain_factor**exp_mdot_a
+        f.oxidizer_inlet.mdot *= strain_factor**exp_mdot_a
         # Update velocities
-        f.set_profile("u", normalized_grid, f.u * strain_factor ** exp_u_a)
-        f.set_profile("V", normalized_grid, f.V * strain_factor ** exp_V_a)
+        f.set_profile("u", normalized_grid, f.u * strain_factor**exp_u_a)
+        f.set_profile("V", normalized_grid, f.V * strain_factor**exp_V_a)
         # Update pressure curvature
-        f.set_profile("lambda", normalized_grid, f.L * strain_factor ** exp_lam_a)
+        f.set_profile("lambda", normalized_grid,
+                      f.L * strain_factor**exp_lam_a)
         try:
             # Try solving the flame
             f.solve(loglevel=0, refine_grid=True)
@@ -172,10 +165,8 @@ def flamelet_gen(i):
                 data_directory + file_name,
                 name="solution",
                 loglevel=1,
-                description="Cantera version "
-                + ct.__version__
-                + ", reaction mechanism "
-                + reaction_mechanism,
+                description="Cantera version " + ct.__version__ +
+                ", reaction mechanism " + reaction_mechanism,
             )
         except FlameExtinguished:
             print("Flame extinguished")
@@ -218,13 +209,12 @@ def read_flamelet(paraIn):
 
 
 #%% parallel running
-
-nRange = 20
+nRange = 984
 p = mp.Pool(mp.cpu_count())
 flamelet_range = [x for x in range(nRange)]
 p.map(flamelet_gen, flamelet_range)
 
-#%%
+#%% post
 sp_names = f.gas.species_names
 col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
 
@@ -235,7 +225,6 @@ files = [(x, col_names) for x in range(n)]
 raw = p.map(read_flamelet, files)
 wdot = np.vstack([out[0] for out in raw])
 c = np.vstack([out[1] for out in raw])
-
 
 print(wdot.shape)
 
@@ -309,4 +298,3 @@ df_wdot.to_hdf("CH4_flt.h5", key="wdot", format="table")
 # px.scatter_3d(df_dnn.sample(frac=0.01), x="grid", y="id", z="OH", title="dnn")
 
 # #%%
-
