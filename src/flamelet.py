@@ -24,13 +24,13 @@ from molmass import Formula
 
 #%%
 # Create directory for output data files
-data_directory = 'diffusion_flame_batch_data/'
-if os.path.exists(data_directory):
-    shutil.rmtree(data_directory)
-    os.makedirs(data_directory)
+# data_directory = 'diffusion_flame_batch_data/'
+# if os.path.exists(data_directory):
+#     shutil.rmtree(data_directory)
+#     os.makedirs(data_directory)
 
-if not os.path.exists(data_directory):
-    os.makedirs(data_directory)
+# if not os.path.exists(data_directory):
+#     os.makedirs(data_directory)
 
 
 # Define a limit for the maximum temperature below which the flame is
@@ -183,17 +183,19 @@ def flamelet_gen(i):
 p = mp.Pool(mp.cpu_count())
 flamelet_range = [x for x in range(192)]
 p.map(flamelet_gen, flamelet_range)
+
+
 #%%
-n = 172
+def read_flamelet(i):
+    # print(i)
+    sp_names = f.gas.species_names
+    col_names = sp_names + ['Hs'] + ['Temp'] + ['id'] + ['grid'] + ['amax']
 
-sp_names = f.gas.species_names
-col_names = sp_names + ['Hs'] + ['Temp'] + ['id'] + ['grid'] + ['amax']
-c = np.empty((0, len(col_names)), float)
-wdot = np.empty((0, len(col_names)), float)
+    c = np.empty((0, len(col_names)), float)
+    wdot = np.empty((0, len(col_names)), float)
 
-for i in range(n):
-    print(i)
     file_name = 'strain_loop_{0:02d}.xml'.format(i)
+    print(file_name)
     f.restore(filename=data_directory + file_name, name='solution', loglevel=0)
     a_max = f.strain_rate('max')
 
@@ -209,6 +211,25 @@ for i in range(n):
 
     tmp_w = np.hstack((w_mat.T, Hs_w, T_w, id_mat, grid, amax_mat))
     wdot = np.vstack((wdot, tmp_w))
+
+    return wdot, c
+
+
+#%%
+wdot = np.vstack([read_flamelet(i)[0] for i in [1,2,3,4]])
+wdot.shape
+#%%
+n = 4
+p = mp.Pool(mp.cpu_count())
+files = [x+1 for x in range(n)]
+# files = [1,2]
+raw = p.map(read_flamelet, files)
+wdot = np.vstack(raw[:][0])
+c = np.vstack((raw[:][1]))
+#%%
+for i in range(2):
+    print(i)
+    wdot, c = read_flamelet(i)
 
 df_wdot = pd.DataFrame(wdot, columns=col_names)
 df_c = pd.DataFrame(c, columns=col_names)
