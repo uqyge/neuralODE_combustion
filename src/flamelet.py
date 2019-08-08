@@ -219,7 +219,8 @@ sp_names = f.gas.species_names
 col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
 
 n = len(os.listdir(data_directory)) - 1
-# p = mp.Pool(mp.cpu_count())
+# n = 4
+p = mp.Pool(mp.cpu_count())
 files = [(x, col_names) for x in range(n)]
 # files = [1,2]
 raw = p.map(read_flamelet, files)
@@ -239,7 +240,8 @@ df_wdot.to_hdf("CH4_flt.h5", key="wdot", format="table")
 # #%%
 # px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="Hs", title="concentration")
 # # #%%
-# # px.scatter_3d(df_wdot.sample(frac=0.001), x='grid', y='id', z='N2', title='rate')
+#%%
+px.scatter_3d(df_wdot.sample(frac=0.001), x='grid', y='id', z='N2', title='rate')
 # # # %%
 # # print(n)
 # # id_slt = 11
@@ -298,3 +300,6 @@ df_wdot.to_hdf("CH4_flt.h5", key="wdot", format="table")
 # px.scatter_3d(df_dnn.sample(frac=0.01), x="grid", y="id", z="OH", title="dnn")
 
 # #%%
+
+
+#%%
