@@ -238,7 +238,7 @@ with mp.Pool() as pool:
 wdot = np.vstack([out[0] for out in raw])
 c = np.vstack([out[1] for out in raw])
 
-print(wdot.shape)
+print(f'There are {wdot.shape} samples.')
 
 df_wdot = pd.DataFrame(wdot, columns=col_names)
 df_c = pd.DataFrame(c, columns=col_names)
