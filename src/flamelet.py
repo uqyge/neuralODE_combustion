@@ -53,25 +53,31 @@ def Hs_T_rates(f):
     T_org = copy.deepcopy(f.T)
     T_ref = 298.15
 
-    hs_wdot = np.asarray([
-        np.dot(pm, -net) for pm, net in zip(f.partial_molar_enthalpies.T,
-                                            f.net_production_rates.T)
-    ]).reshape(-1, 1)
+    hs_wdot = np.asarray(
+        [
+            np.dot(pm, -net)
+            for pm, net in zip(f.partial_molar_enthalpies.T, f.net_production_rates.T)
+        ]
+    ).reshape(-1, 1)
 
     T_wdot = hs_wdot / (f.density * f.cp).reshape(-1, 1)
 
-    Ha = np.asarray([
-        np.dot(pm, ha_Y / f.gas.molecular_weights)
-        for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
-    ])
+    Ha = np.asarray(
+        [
+            np.dot(pm, ha_Y / f.gas.molecular_weights)
+            for pm, ha_Y in zip(f.partial_molar_enthalpies.T, f.Y.T)
+        ]
+    )
 
     f.set_profile("T", normalized_grid, f.T / f.T * T_ref)
     gas_ref = copy.deepcopy(f.partial_molar_enthalpies)
 
-    H0 = np.asarray([
-        np.dot(pm, h0_Y / f.gas.molecular_weights)
-        for pm, h0_Y in zip(gas_ref.T, f.Y.T)
-    ])
+    H0 = np.asarray(
+        [
+            np.dot(pm, h0_Y / f.gas.molecular_weights)
+            for pm, h0_Y in zip(gas_ref.T, f.Y.T)
+        ]
+    )
 
     # set temperature back
     f.set_profile("T", normalized_grid, T_org)
@@ -119,8 +125,10 @@ file_name = "initial_solution.xml"
 f.save(
     data_directory + file_name,
     name="solution",
-    description="Cantera version " + ct.__version__ + ", reaction mechanism " +
-    reaction_mechanism,
+    description="Cantera version "
+    + ct.__version__
+    + ", reaction mechanism "
+    + reaction_mechanism,
 )
 
 
@@ -129,7 +137,8 @@ def flamelet_gen(i):
     # Compute counterflow diffusion flames at increasing strain rates at 1 bar
     # The strain rate is assumed to increase by 25% in each step until the flame is
     # extinguished
-    strain_factor = 1.004**i
+    # strain_factor = 1.2 ** i
+    strain_factor = 1.004 ** i
 
     exp_d_a = -1.0 / 2.0
     exp_u_a = 1.0 / 2.0
@@ -146,17 +155,16 @@ def flamelet_gen(i):
         print("strain rate iteration", i)
         # Create an initial guess based on the previous solution
         # Update grid
-        f.flame.grid *= strain_factor**exp_d_a
+        f.flame.grid *= strain_factor ** exp_d_a
         normalized_grid = f.grid / (f.grid[-1] - f.grid[0])
         # Update mass fluxes
-        f.fuel_inlet.mdot *= strain_factor**exp_mdot_a
-        f.oxidizer_inlet.mdot *= strain_factor**exp_mdot_a
+        f.fuel_inlet.mdot *= strain_factor ** exp_mdot_a
+        f.oxidizer_inlet.mdot *= strain_factor ** exp_mdot_a
         # Update velocities
-        f.set_profile("u", normalized_grid, f.u * strain_factor**exp_u_a)
-        f.set_profile("V", normalized_grid, f.V * strain_factor**exp_V_a)
+        f.set_profile("u", normalized_grid, f.u * strain_factor ** exp_u_a)
+        f.set_profile("V", normalized_grid, f.V * strain_factor ** exp_V_a)
         # Update pressure curvature
-        f.set_profile("lambda", normalized_grid,
-                      f.L * strain_factor**exp_lam_a)
+        f.set_profile("lambda", normalized_grid, f.L * strain_factor ** exp_lam_a)
         try:
             # Try solving the flame
             f.solve(loglevel=0, refine_grid=True)
@@ -165,8 +173,10 @@ def flamelet_gen(i):
                 data_directory + file_name,
                 name="solution",
                 loglevel=1,
-                description="Cantera version " + ct.__version__ +
-                ", reaction mechanism " + reaction_mechanism,
+                description="Cantera version "
+                + ct.__version__
+                + ", reaction mechanism "
+                + reaction_mechanism,
             )
         except FlameExtinguished:
             print("Flame extinguished")
@@ -210,20 +220,21 @@ def read_flamelet(paraIn):
 
 #%% parallel running
 nRange = 984
-p = mp.Pool(mp.cpu_count())
-flamelet_range = [x for x in range(nRange)]
-p.map(flamelet_gen, flamelet_range)
+# nRange = 24
+with mp.Pool() as pool:
+    flamelet_range = [x for x in range(nRange)]
+    pool.map(flamelet_gen, flamelet_range)
 
-#%% post
+#%% post processing
 sp_names = f.gas.species_names
 col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
 
+# count all strain_rate files
 n = len(os.listdir(data_directory)) - 1
-# n = 4
-p = mp.Pool(mp.cpu_count())
-files = [(x, col_names) for x in range(n)]
-# files = [1,2]
-raw = p.map(read_flamelet, files)
+
+with mp.Pool() as pool:
+    files = [(x, col_names) for x in range(n)]
+    raw = pool.map(read_flamelet, files)
 wdot = np.vstack([out[0] for out in raw])
 c = np.vstack([out[1] for out in raw])
 
@@ -232,74 +243,18 @@ print(wdot.shape)
 df_wdot = pd.DataFrame(wdot, columns=col_names)
 df_c = pd.DataFrame(c, columns=col_names)
 
+# set N2 to innert
 df_wdot["N2"] = 0
+df_wdot["AR"] = 0
 
-df_c.to_hdf("CH4_flt.h5", key="c", format="table")
-df_wdot.to_hdf("CH4_flt.h5", key="wdot", format="table")
+out_name = "CH4_flt.h5"
+if os.path.exists(out_name):
+    os.remove(out_name)
 
-# #%%
-# px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="Hs", title="concentration")
-# # #%%
-#%%
-px.scatter_3d(df_wdot.sample(frac=0.001), x='grid', y='id', z='N2', title='rate')
-# # # %%
-# # print(n)
-# # id_slt = 11
-# # y_last = df_wdot.Hs[df_wdot.id == id_slt]
-# # x_last = df_c.Temp[df_c.id == id_slt]
-# # plt.plot(x_last, y_last)
+df_c.to_hdf(out_name, key="c", format="table")
+df_wdot.to_hdf(out_name, key="wdot", format="table")
 
-# #%%
-# input_features = [
-#     "H2",
-#     "H",
-#     "O",
-#     "O2",
-#     "OH",
-#     "H2O",
-#     "HO2",
-#     "H2O2",
-#     "C",
-#     "CH",
-#     "CH2",
-#     "CH2(S)",
-#     "CH3",
-#     "CH4",
-#     "CO",
-#     "CO2",
-#     "HCO",
-#     "CH2O",
-#     "CH2OH",
-#     "CH3O",
-#     "CH3OH",
-#     "C2H",
-#     "C2H2",
-#     "C2H3",
-#     "C2H4",
-#     "C2H5",
-#     "C2H6",
-#     "HCCO",
-#     "CH2CO",
-#     "HCCOH",
-#     "N2",
-#     "Hs",
-#     "Temp",
-# ]
-# # df_c=org
-# # df_wdot=wdot
-
-# df_c["dt"] = 1e-8
-
-# model = tf.keras.models.load_model("eulerModel.h5")
-# pred = model.predict(df_c[input_features + ["dt"]], batch_size=1024 * 8)
-# df_dnn = pd.DataFrame(pred, columns=input_features)
-
-# df_dnn["grid"] = df_c["grid"]
-# df_dnn["id"] = df_c["id"]
-# #%%
-# px.scatter_3d(df_dnn.sample(frac=0.01), x="grid", y="id", z="OH", title="dnn")
-
-# #%%
-
+#%% plot
+px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="AR", title="rate")
 
 #%%

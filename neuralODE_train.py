@@ -117,7 +117,7 @@ for n_neuron in [64]:
                 ),
             ]
 
-            # model.load_weights(filepath)
+            model.load_weights(filepath)
 
             # fit the model
             history = model.fit(
