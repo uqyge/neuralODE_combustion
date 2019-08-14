@@ -1,12 +1,13 @@
 #%%
-import subprocess
 import os
 import shutil
+import subprocess
+
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.python.tools import freeze_graph
-from tensorflow.python.saved_model import tag_constants
 from tensorflow.keras.utils import plot_model
+from tensorflow.python.saved_model import tag_constants
+from tensorflow.python.tools import freeze_graph
 
 
 def convertUff(dirPath, model, output_name, uff_name):

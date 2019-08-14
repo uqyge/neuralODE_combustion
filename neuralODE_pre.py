@@ -8,14 +8,13 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# from src.dataScaling import data_scaler
 from src.ODENet import data_scaler
 
-# %%
+# %% Extract data
 # dataPath = 'data/CH4DB.h5'
 # dataPath = 'data/H2DB_L.h5'
-# dataPath = 'data/CH4_flt.h5'
-dataPath = "./CH4_flt.h5"
+dataPath = "data/CH4_flt.h5"
+# dataPath = "./CH4_flt.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")
@@ -29,8 +28,7 @@ ddWdot = dd.read_hdf(dataPath, key="wdot")
 #     "CH4", "CH3", "CH3O", "CH2O", "HCO", "CO2", "CO", "H2", "H", "O2", "O",
 #     "OH", "HO2", "H2O", "H2O2", "N2", 'Hs', 'Temp'
 # ]
-
-input_features = [
+species = [
     "H2",
     "H",
     "O",
@@ -62,9 +60,10 @@ input_features = [
     "CH2CO",
     "HCCOH",
     "N2",
-    "Hs",
-    "Temp",
+    "AR",
 ]
+*input_species, _ = species
+input_features = input_species + ["Hs", "Temp"]
 
 labels = input_features
 
@@ -86,9 +85,9 @@ def read_h5_data(input_features, labels):
     return input_np, label_np, in_scaler, out_scaler
 
 
+#%% prepare data for training
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels
 )
 x_train, x_test, y_train, y_test = train_test_split(x_input, y_label, test_size=0.05)
 pickle.dump((labels, in_scaler, out_scaler), open("./data/tmp.pkl", "wb"))
-

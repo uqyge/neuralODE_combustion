@@ -1,6 +1,7 @@
-# %%
+#%%
 import os
 import pickle
+import random
 import shutil
 
 import dask.dataframe as dd
@@ -15,17 +16,26 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Activation, Dense, Input
 from tensorflow.keras.models import Model, Sequential
 
-from src.dataScaling import data_scaler
-from src.res_block import res_block
-from src.utils import SGDRScheduler
+from src.ODENet import ODENetModel, SGDRScheduler
 
-# %%
+#%%
+
 print("set up ANN")
-cycle = 8
-# n_neuron = 100
-# branches = 3
-scale = 3
+cycle = 2
 
+ep_size = 0
+base = 2
+clc = 2
+for i in range(cycle):
+    ep_size += base * clc ** (i)
+print(ep_size)
+epochs, c_len = ep_size, base
+
+epoch_size = x_train.shape[0]
+batch_size = 1024 * 8 * 8
+vsplit = 0.1
+
+scale = 3
 fc = True
 dataSet = dataPath.split("/")[1].split(".")[0]
 
@@ -38,44 +48,21 @@ for n_neuron in [64]:
 
             batch_norm = False
 
-            # strategy = tensorflow.distribute.MirroredStrategy(devices=["/gpu:0"])
-            # print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
-
-            # with strategy.scope():
-            inputs = Input(shape=(dim_input,), name="input_1")
-            x = Dense(n_neuron, activation="relu")(inputs)
-
-            # less then 2 res_block, there will be variance
-            x = res_block(
-                x, scale, n_neuron, stage=1, block="a", bn=batch_norm, branches=branches
+            model = ODENetModel(
+                dim_input=dim_input,
+                dim_label=dim_label,
+                dataSet=dataSet,
+                n_neuron=n_neuron,
+                branches=branches,
+                scale=scale,
+                fc=fc,
             )
-            x = res_block(
-                x, scale, n_neuron, stage=1, block="b", bn=batch_norm, branches=branches
-            )
-            # x = res_block(x, scale, n_neuron, stage=1, block='c', bn=batch_norm,branches=branches)
-
-            if fc == True:
-                x = Dense(100, activation="relu")(x)
-            # x = Dropout(0.1)(x)
-            predictions = Dense(dim_label, activation="linear", name="output_1")(x)
-
-            model = Model(inputs=inputs, outputs=predictions)
             model.summary()
 
             loss_type = "mse"
             model.compile(loss=loss_type, optimizer="adam", metrics=["accuracy"])
 
-            # %%
-            print("Training")
-            batch_size = 1024 * 8 * 8
-            epochs = 400
-            vsplit = 0.1
-
-            # !mkdir ./tmp
-            # if os.path.exists('./tmp'):
-            # shutil.rmtree('./tmp')
             filepath = "./tmp/{}.weights.best.cntk.hdf5".format(m_name)
-
             checkpoint = ModelCheckpoint(
                 filepath,
                 monitor="val_loss",
@@ -84,16 +71,7 @@ for n_neuron in [64]:
                 mode="min",
                 save_freq="epoch",
             )
-            # period = 10)
 
-            epoch_size = x_train.shape[0]
-            ep_size = 0
-            base = 2
-            clc = 2
-            for i in range(cycle):
-                ep_size += base * clc ** (i)
-            print(ep_size)
-            epochs, c_len = ep_size, base
             schedule = SGDRScheduler(
                 min_lr=1e-6,
                 max_lr=1e-4,
@@ -109,17 +87,10 @@ for n_neuron in [64]:
                     "./tb/{}".format(m_name), histogram_freq=0, profile_batch=0
                 ),
             ]
-            callbacks_list2 = [
-                checkpoint,
-                schedule,
-                tensorflow.keras.callbacks.TensorBoard(
-                    "./tb/{}".format(m_name), histogram_freq=0, profile_batch=0
-                ),
-            ]
+            callbacks_list2 = callbacks_list1 + [schedule]
 
+            # fit the model course
             model.load_weights(filepath)
-
-            # fit the model
             history = model.fit(
                 x_train,
                 y_train,
@@ -131,7 +102,7 @@ for n_neuron in [64]:
                 shuffle=False,
             )
 
-            # fit the model
+            # fit the model refined
             history = model.fit(
                 x_train,
                 y_train,
@@ -144,8 +115,7 @@ for n_neuron in [64]:
             )
             model.save("base_neuralODE_{}.h5".format(m_name))
 
-
-# %%
+#%%
 predict_val = model.predict(x_test, batch_size=1024 * 8 * 8 * 4)
 predict_df = pd.DataFrame(out_scaler.inverse_transform(predict_val), columns=labels)
 r2 = r2_score(predict_val, y_test)
@@ -157,15 +127,16 @@ test_df = pd.DataFrame(y_test, columns=labels)
 spl_idx = pred_df.sample(frac=0.01).index
 
 # for sp in labels:
-#     x = pred_df.sample(frac=0.01)
-#     plt.plot(pred_df.iloc[spl_idx][sp], test_df.iloc[spl_idx][sp], 'rd', ms=1)
-#     plt.title('{} r2 ={}'.format(sp, r2_score(pred_df[sp], test_df[sp])))
-#     plt.savefig('fig/{}_r2'.format(sp))
-#     plt.show()
+for i in range(5):
+    sp = random.choice(labels)
+    x = pred_df.sample(frac=0.01)
 
-# %%
-sp = "H2O2"
-plt.hist(wdot[sp], bins=20)
-plt.show()
+    plt.subplot(2, 1, 1)
+    plt.plot(pred_df.iloc[spl_idx][sp], test_df.iloc[spl_idx][sp], "rd", ms=1)
+    plt.title("{} r2 ={}".format(sp, r2_score(pred_df[sp], test_df[sp])))
+    plt.savefig("fig/{}_r2".format(sp))
+    plt.subplot(2, 1, 2)
+    plt.hist(wdot[sp], bins=20)
+    plt.show()
 
-#%%
+    plt.savefig("fig/{}_r2".format(sp))
