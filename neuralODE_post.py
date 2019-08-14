@@ -1,16 +1,13 @@
 # %%
 import os
 import pickle
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow.keras as keras
-from tensorflow.keras.layers import Dense, Activation
-from tensorflow.keras.models import Sequential, load_model
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import tensorflow.keras as keras
-from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Activation, Dense, Input
+from tensorflow.keras.models import Model, Sequential, load_model
 from tensorflow.keras.utils import plot_model
 
 if os.path.exists('eulerModel.h5'):

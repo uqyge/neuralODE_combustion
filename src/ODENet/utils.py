@@ -1,7 +1,8 @@
-from tensorflow.keras.callbacks import LearningRateScheduler, Callback
-import tensorflow.keras.backend as K
 import math
+
 import numpy as np
+import tensorflow.keras.backend as K
+from tensorflow.keras.callbacks import Callback, LearningRateScheduler
 
 
 def cubic_loss(y_true, y_pred):
