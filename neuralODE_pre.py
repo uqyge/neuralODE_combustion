@@ -20,13 +20,12 @@ ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")
 
 # %%
-# input_features = [
-#     'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2', 'Hs', 'Temp'
+# species = [
+#     'H', 'H2', 'O', 'O2', 'OH', 'H2O', 'N2', 'HO2', 'H2O2'
 # ]
-
-# input_features = [
+# species = [
 #     "CH4", "CH3", "CH3O", "CH2O", "HCO", "CO2", "CO", "H2", "H", "O2", "O",
-#     "OH", "HO2", "H2O", "H2O2", "N2", 'Hs', 'Temp'
+#     "OH", "HO2", "H2O", "H2O2", "N2"
 # ]
 species = [
     "H2",
@@ -62,6 +61,7 @@ species = [
     "N2",
     "AR",
 ]
+
 *input_species, _ = species
 input_features = input_species + ["Hs", "Temp"]
 
@@ -71,7 +71,7 @@ org = ddOrg.compute()
 wdot = ddWdot.compute()
 
 
-# %%
+# %% prepare data for training
 def read_h5_data(input_features, labels):
     in_scaler = data_scaler()
     out_scaler = data_scaler()
@@ -85,7 +85,6 @@ def read_h5_data(input_features, labels):
     return input_np, label_np, in_scaler, out_scaler
 
 
-#%% prepare data for training
 x_input, y_label, in_scaler, out_scaler = read_h5_data(
     input_features=input_features, labels=labels
 )
