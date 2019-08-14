@@ -15,13 +15,13 @@ def ODENetModel(
     dim_input,
     dim_label,
     dataSet="test_default",
+    batch_norm=False,
     n_neuron=64,
     branches=5,
     scale=3,
     fc=True,
 ):
     m_name = "{}_n{}_b{}_fc{}".format(dataSet, n_neuron, branches, fc)
-    batch_norm = False
 
     inputs = Input(shape=(dim_input,), name="input_1")
     x = Dense(n_neuron, activation="relu")(inputs)

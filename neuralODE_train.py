@@ -19,17 +19,21 @@ from tensorflow.keras.models import Model, Sequential
 from src.ODENet import ODENetModel, SGDRScheduler
 
 #%%
-
 print("set up ANN")
-cycle = 2
 
-ep_size = 0
-base = 2
-clc = 2
-for i in range(cycle):
-    ep_size += base * clc ** (i)
-print(ep_size)
-epochs, c_len = ep_size, base
+
+def epoch_set(cycle=3):
+    ep_size = 0
+    base = 2
+    clc = 2
+    for i in range(cycle):
+        ep_size += base * clc ** (i)
+    print(ep_size)
+    return base, ep_size
+
+
+cycle = 2
+c_len, epochs = epoch_set(cycle=cycle)
 
 epoch_size = x_train.shape[0]
 batch_size = 1024 * 8 * 8
@@ -52,6 +56,7 @@ for n_neuron in [64]:
                 dim_input=dim_input,
                 dim_label=dim_label,
                 dataSet=dataSet,
+                batch_norm=batch_norm,
                 n_neuron=n_neuron,
                 branches=branches,
                 scale=scale,
@@ -106,7 +111,7 @@ for n_neuron in [64]:
             history = model.fit(
                 x_train,
                 y_train,
-                epochs=int(epochs / 2),
+                epochs=epoch_set(cycle - 1)[1],
                 batch_size=batch_size,
                 validation_split=vsplit,
                 verbose=2,
