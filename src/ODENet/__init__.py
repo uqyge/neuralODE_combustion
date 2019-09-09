@@ -1,3 +1,4 @@
+name = "ODENet"
 from .models import ODENetModel
 from .layers import res_block
 from .layers import res_branch

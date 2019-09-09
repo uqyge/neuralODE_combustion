@@ -22,7 +22,7 @@ import plotly.express as px
 import tensorflow as tf
 from molmass import Formula
 
-#%%
+# %%
 # Create directory for output data files
 data_directory = "diffusion_flame_batch_data/"
 if not os.path.exists(data_directory):
@@ -88,8 +88,10 @@ def Hs_T_rates(f):
 
 # INITIALIZATION
 # reaction_mechanism = 'gri30.xml'
-reaction_mechanism = "./data/gri12/grimech12.cti"
+# reaction_mechanism = "./data/gri12/grimech12.cti"
+reaction_mechanism = "./data/smooke.cti"
 gas = ct.Solution(reaction_mechanism)
+gas.transport_model = "UnityLewis"
 width = 0.02  # 18mm wide
 grid_ini = width * np.linspace(0, 1, 20)
 # f = ct.CounterflowDiffusionFlame(gas, width=width)
@@ -102,10 +104,11 @@ f.P = ct.one_atm  # 1 bar
 # f.fuel_inlet.mdot = 0.25  # kg/m^2/s
 f.fuel_inlet.mdot = 0.05  # kg/m^2/s
 # f.fuel_inlet.X = 'CH4:0.00278,O2:0.00695,N2:0.02616'
-f.fuel_inlet.Y = "CH4:1"
+# f.fuel_inlet.Y = "CH4:1"
+f.fuel_inlet.Y = "CH4:0.1561,O2:0.1966,N2:0.6473"
 f.fuel_inlet.T = 300  # K
 # f.oxidizer_inlet.mdot = 0.5  # kg/m^2/s
-f.oxidizer_inlet.mdot = 0.1  # kg/m^2/s
+f.oxidizer_inlet.mdot = 0.05  # kg/m^2/s
 f.oxidizer_inlet.Y = "O2:0.23,N2:0.77"
 # f.oxidizer_inlet.X = 'O2:0.00695,N2:0.02616'
 f.oxidizer_inlet.T = 300  # K
@@ -138,7 +141,7 @@ def flamelet_gen(i):
     # The strain rate is assumed to increase by 25% in each step until the flame is
     # extinguished
     # strain_factor = 1.2 ** i
-    strain_factor = 1.004 ** i
+    strain_factor = 1.009 ** i
 
     exp_d_a = -1.0 / 2.0
     exp_u_a = 1.0 / 2.0
@@ -218,27 +221,32 @@ def read_flamelet(paraIn):
     return wdot, c
 
 
-#%% parallel running
-nRange = 984
-# nRange = 24
+# %% parallel running
+nRange = 500
+# nRange = 36
 with mp.Pool() as pool:
     flamelet_range = [x for x in range(nRange)]
     pool.map(flamelet_gen, flamelet_range)
 
-#%% post processing
+# %% post processing
 sp_names = f.gas.species_names
 col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
 
 # count all strain_rate files
-n = len(os.listdir(data_directory)) - 1
+# n = len(os.listdir(data_directory)) - 1
+#%%
+n_files = os.listdir(data_directory)
+n_files.remove("initial_solution.xml")
+n_files = [x.split("_")[2].split(".")[0] for x in n_files]
+# n_files = [x.split(".")[0] for x in n_files]
 
 with mp.Pool() as pool:
-    files = [(x, col_names) for x in range(n)]
+    files = [(int(x), col_names) for x in n_files]
     raw = pool.map(read_flamelet, files)
 wdot = np.vstack([out[0] for out in raw])
 c = np.vstack([out[1] for out in raw])
 
-print(f'There are {wdot.shape} samples.')
+print(f"There are {wdot.shape} samples.")
 
 df_wdot = pd.DataFrame(wdot, columns=col_names)
 df_c = pd.DataFrame(c, columns=col_names)
@@ -254,7 +262,15 @@ if os.path.exists(out_name):
 df_c.to_hdf(out_name, key="c", format="table")
 df_wdot.to_hdf(out_name, key="wdot", format="table")
 
-#%% plot
-px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="AR", title="rate")
+# %% plot
+# px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="Temp", title="rate")
+px.scatter_3d(df_c.sample(frac=1), x="grid", y="amax", z="Temp", title="rate")
 
-#%%
+# %%
+plt.plot(f.mix_diff_coeffs_mass.T)
+
+# %%
+plt.plot(f.mix_diff_coeffs.T)
+
+
+# %%

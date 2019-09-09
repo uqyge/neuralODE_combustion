@@ -32,7 +32,7 @@ def epoch_set(cycle=3):
     return base, ep_size
 
 
-cycle = 2
+cycle = 6
 c_len, epochs = epoch_set(cycle=cycle)
 
 epoch_size = x_train.shape[0]
@@ -145,3 +145,6 @@ for i in range(5):
     plt.show()
 
     plt.savefig("fig/{}_r2".format(sp))
+
+
+#%%
