@@ -15,7 +15,8 @@ from src.ODENet import data_scaler
 # dataPath = 'data/H2DB_L.h5'
 # dataPath = "data/CH4_flt.h5"
 # dataPath = "./CH4_flt.h5"
-dataPath = "data/CH4_sk.h5"
+# dataPath = "data/CH4_sk_04.h5"
+dataPath = "data/CH4_sk_02_XL.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")
@@ -78,6 +79,7 @@ species = [
 # ]
 
 *input_species, _ = species
+# input_species = species
 # input_features = input_species + ["Hs", "Temp"]
 input_features = input_species + ["Temp"]
 
@@ -85,6 +87,8 @@ labels = input_features
 
 org = ddOrg.compute()
 wdot = ddWdot.compute()
+org = org.astype("float32")
+wdot = wdot.astype("float32")
 
 
 # %% prepare data for training
@@ -106,3 +110,4 @@ x_input, y_label, in_scaler, out_scaler = read_h5_data(
 )
 x_train, x_test, y_train, y_test = train_test_split(x_input, y_label, test_size=0.05)
 pickle.dump((labels, in_scaler, out_scaler), open("./data/tmp.pkl", "wb"))
+

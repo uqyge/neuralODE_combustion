@@ -93,8 +93,9 @@ reaction_mechanism = "./data/smooke.cti"
 gas = ct.Solution(reaction_mechanism)
 gas.transport_model = "UnityLewis"
 width = 0.02  # 18mm wide
-grid_ini = width * np.linspace(0, 1, 20)
-# f = ct.CounterflowDiffusionFlame(gas, width=width)
+# width = 0.04  # 18mm wide
+# grid_ini = width * np.linspace(0, 1, 2000)
+grid_ini = width * (np.hstack([np.linspace(0, 0.9, 200), np.linspace(0.901, 1, 1800)]))
 
 f = ct.CounterflowDiffusionFlame(gas, grid=grid_ini)
 f.set_max_grid_points(f.flame, 20000)
@@ -114,7 +115,11 @@ f.oxidizer_inlet.Y = "O2:0.23,N2:0.77"
 f.oxidizer_inlet.T = 300  # K
 
 # Set refinement parameters, if used
-f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
+# f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.002, prune=0.0001)
+# SMALL
+# f.set_refine_criteria(ratio=100.0, slope=0.005, curve=0.01, prune=-0.1)
+# Large
+f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.001, prune=-0.1)
 # f.set_refine_criteria(ratio=100.0, slope=0.2, curve=0.5, prune=0.0001)
 
 f.set_interrupt(interrupt_extinction)
@@ -207,6 +212,7 @@ def read_flamelet(paraIn):
 
     w_mat = f.net_production_rates
     c_mat = f.concentrations
+    # c_mat = f.Y
     id_mat = np.ones((w_mat.shape[1], 1)) * i
     amax_mat = np.ones((w_mat.shape[1], 1)) * a_max
     Hs_w, T_w, Hs_c, grid = Hs_T_rates(f)
@@ -222,7 +228,7 @@ def read_flamelet(paraIn):
 
 
 # %% parallel running
-nRange = 500
+nRange = 528
 # nRange = 36
 with mp.Pool() as pool:
     flamelet_range = [x for x in range(nRange)]
@@ -264,7 +270,7 @@ df_wdot.to_hdf(out_name, key="wdot", format="table")
 
 # %% plot
 # px.scatter_3d(df_wdot.sample(frac=1), x="grid", y="id", z="Temp", title="rate")
-px.scatter_3d(df_c.sample(frac=1), x="grid", y="amax", z="Temp", title="rate")
+px.scatter_3d(df_c.sample(frac=0.01), x="grid", y="amax", z="Temp", title="rate")
 
 # %%
 plt.plot(f.mix_diff_coeffs_mass.T)
@@ -274,3 +280,15 @@ plt.plot(f.mix_diff_coeffs.T)
 
 
 # %%
+st_list = list(set(df_wdot["amax"]))
+st_list.sort()
+df_plot = df_c[df_wdot["amax"] == st_list[5]]
+#%%
+px.line(df_plot, x="grid", y="Temp")
+
+
+#%%
+plt.hist(df_plot["grid"])
+print(df_plot.shape)
+
+#%%
