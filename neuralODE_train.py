@@ -18,7 +18,11 @@ from tensorflow.keras.models import Model, Sequential
 
 from src.ODENet import ODENetModel, SGDRScheduler
 
-#%%
+#%% Load Data
+%run neuralODE_pre.py
+
+
+#%% Build Model
 print("set up ANN")
 
 

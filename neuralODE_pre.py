@@ -11,12 +11,7 @@ from sklearn.model_selection import train_test_split
 from src.ODENet import data_scaler
 
 # %% Extract data
-# dataPath = 'data/CH4DB.h5'
-# dataPath = 'data/H2DB_L.h5'
-# dataPath = "data/CH4_flt.h5"
-# dataPath = "./CH4_flt.h5"
-# dataPath = "data/CH4_sk_04.h5"
-dataPath = "data/CH4_sk_02_XL.h5"
+dataPath = "data/CH4_sk_02_XL_600.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")

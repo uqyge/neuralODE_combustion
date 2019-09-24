@@ -31,8 +31,8 @@ def namestr(obj, namespace):
 # dataPath = 'data/H2DB_L.h5'
 # dataPath = "data/CH4_flt.h5"
 # dataPath = "data/CH4_sk_04.h5"
-dataPath = "data/CH4_sk_02_XL.h5"
-# dataPath = "./CH4_flt.h5"
+# dataPath = "data/CH4_sk_02_XL.h5"
+dataPath = "./CH4_flt.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")
@@ -131,15 +131,15 @@ df_dnn["grid"] = org["grid"]
 df_dnn["amax"] = org["amax"]
 
 # %%
-frac = 0.001
+frac = 0.01
 sp = "HCO"
 
 px.scatter_3d(org.sample(frac=frac), x="grid", y="amax", z=sp)
 #%%
-px.scatter_3d(df_dnn.sample(frac=frac), x="grid", y="amax", z=sp)
+px.scatter_3d(wdot.sample(frac=frac), x="grid", y="amax", z=sp)
 
 #%%
-px.scatter_3d(wdot.sample(frac=frac), x="grid", y="amax", z=sp)
+px.scatter_3d(df_dnn.sample(frac=frac), x="grid", y="amax", z=sp)
 
 #%%
 px.line(wdot[wdot["amax"] < 50], x="grid", y="O", color="amax")
