@@ -27,9 +27,9 @@ from molmass import Formula
 data_directory = "diffusion_flame_batch_data/"
 if not os.path.exists(data_directory):
     os.makedirs(data_directory)
-    # if os.path.exists(data_directory):
-#     shutil.rmtree(data_directory)
-#     os.makedirs(data_directory)
+if os.path.exists(data_directory):
+    shutil.rmtree(data_directory)
+    os.makedirs(data_directory)
 
 
 # Define a limit for the maximum temperature below which the flame is
@@ -94,8 +94,8 @@ gas = ct.Solution(reaction_mechanism)
 gas.transport_model = "UnityLewis"
 width = 0.02  # 18mm wide
 # width = 0.04  # 18mm wide
-# grid_ini = width * np.linspace(0, 1, 2000)
-grid_ini = width * (np.hstack([np.linspace(0, 0.9, 200), np.linspace(0.901, 1, 1800)]))
+grid_ini = width * np.linspace(0, 1, 4000)
+# grid_ini = width * (np.hstack([np.linspace(0, 0.9, 200), np.linspace(0.901, 1, 1800)]))
 
 f = ct.CounterflowDiffusionFlame(gas, grid=grid_ini)
 f.set_max_grid_points(f.flame, 20000)
@@ -104,21 +104,21 @@ f.set_max_grid_points(f.flame, 20000)
 f.P = ct.one_atm  # 1 bar
 # f.fuel_inlet.mdot = 0.25  # kg/m^2/s
 f.fuel_inlet.mdot = 0.05  # kg/m^2/s
+
+f.fuel_inlet.Y = "CH4:0.156364,O2:0.196486,N2:0.64715"
 # f.fuel_inlet.X = 'CH4:0.00278,O2:0.00695,N2:0.02616'
-# f.fuel_inlet.Y = "CH4:1"
-f.fuel_inlet.Y = "CH4:0.1561,O2:0.1966,N2:0.6473"
-f.fuel_inlet.T = 300  # K
+f.fuel_inlet.T = 294  # K
 # f.oxidizer_inlet.mdot = 0.5  # kg/m^2/s
-f.oxidizer_inlet.mdot = 0.05  # kg/m^2/s
-f.oxidizer_inlet.Y = "O2:0.23,N2:0.77"
+f.oxidizer_inlet.mdot = 0.05  # kg/m^2/sy
+f.oxidizer_inlet.Y = "O2:0.232917,N2:0.767083"
 # f.oxidizer_inlet.X = 'O2:0.00695,N2:0.02616'
-f.oxidizer_inlet.T = 300  # K
+f.oxidizer_inlet.T = 294  # K
 
 # Set refinement parameters, if used
 # SMALL
-# f.set_refine_criteria(ratio=100.0, slope=0.005, curve=0.01, prune=-0.1)
+f.set_refine_criteria(ratio=100.0, slope=0.005, curve=0.01, prune=-0.1)
 # Large
-f.set_refine_criteria(ratio=100.0, slope=0.002, curve=0.002, prune=-0.1)
+# f.set_refine_criteria(ratio=100.0, slope=0.002, curve=0.002, prune=-0.1)
 # XL
 # f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.001, prune=-0.1)
 # QUICK
@@ -153,7 +153,7 @@ def flamelet_gen(i):
     # 1200
     # strain_factor = 1.004 ** i
     # 300
-    strain_factor = 95 * i[0] / (i[1] - 1) + 1
+    strain_factor = 75 * i[0] / (i[1] - 1) + 1
 
     exp_d_a = -1.0 / 2.0
     exp_u_a = 1.0 / 2.0
@@ -182,7 +182,7 @@ def flamelet_gen(i):
         f.set_profile("lambda", normalized_grid, f.L * strain_factor ** exp_lam_a)
         try:
             # Try solving the flame
-            f.solve(loglevel=0, refine_grid=True)
+            f.solve(loglevel=0, refine_grid=True, auto=True)
             file_name = "strain_loop_" + format(i[0], "02d") + ".xml"
             f.save(
                 data_directory + file_name,
@@ -218,6 +218,7 @@ def read_flamelet(paraIn):
 
     w_mat = f.net_production_rates
     c_mat = f.concentrations
+
     # c_mat = f.Y
 
     i = int(file_name.split(".")[0].split("_")[2])
@@ -226,24 +227,28 @@ def read_flamelet(paraIn):
     Hs_w, T_w, Hs_c, grid = Hs_T_rates(f)
     T_c = f.T.reshape(-1, 1)
 
-    tmp_c = np.hstack((c_mat.T, Hs_c, T_c, id_mat, grid, amax_mat))
+    tmp_c = np.hstack(
+        (c_mat.T, Hs_c, T_c, f.density.reshape(-1, 1), id_mat, grid, amax_mat)
+    )
     c = np.vstack((c, tmp_c))
 
-    tmp_w = np.hstack((w_mat.T, Hs_w, T_w, id_mat, grid, amax_mat))
+    tmp_w = np.hstack(
+        (w_mat.T, Hs_w, T_w, f.density.reshape(-1, 1), id_mat, grid, amax_mat)
+    )
     wdot = np.vstack((wdot, tmp_w))
 
     return wdot, c
 
 
 # %% parallel running
-nRange = 600
+nRange = 1000
 with mp.Pool() as pool:
-    flamelet_range = [(x, nRange) for x in range(nRange)]
+    flamelet_range = [(x, nRange) for x in range(0, nRange, 1)]
     pool.map(flamelet_gen, flamelet_range)
 
 # %% post processing
 sp_names = f.gas.species_names
-col_names = sp_names + ["Hs"] + ["Temp"] + ["id"] + ["grid"] + ["amax"]
+col_names = sp_names + ["Hs", "Temp", "rho", "id", "grid", "amax"]
 
 #%%
 n_files = os.listdir(data_directory)

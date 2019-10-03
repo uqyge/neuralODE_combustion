@@ -11,7 +11,8 @@ from sklearn.model_selection import train_test_split
 from src.ODENet import data_scaler
 
 # %% Extract data
-dataPath = "data/CH4_sk_02_XL_600.h5"
+# dataPath = "data/CH4_sk_L_2000.h5"
+dataPath = "data/CH4_sk_S_L1000_U2000.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")
@@ -82,8 +83,11 @@ labels = input_features
 
 org = ddOrg.compute()
 wdot = ddWdot.compute()
-org = org.astype("float32")
-wdot = wdot.astype("float32")
+org = org.clip(0)
+# org = org[(org.amax > 10) & (org.amax < 1800)]
+# wdot = wdot[(wdot.amax > 10) & (wdot.amax < 1800)]
+# org = org.astype("float32")
+# wdot = wdot.astype("float32")
 
 
 # %% prepare data for training

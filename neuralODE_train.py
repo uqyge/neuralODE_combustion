@@ -36,7 +36,7 @@ def epoch_set(cycle=3):
     return base, ep_size
 
 
-cycle = 10
+cycle = 7
 c_len, epochs = epoch_set(cycle=cycle)
 
 epoch_size = x_train.shape[0]
@@ -99,7 +99,7 @@ for n_neuron in [64]:
             callbacks_list2 = callbacks_list1 + [schedule]
 
             # fit the model course
-            # model.load_weights(filepath)
+            model.load_weights(filepath)
             history = model.fit(
                 x_train,
                 y_train,
