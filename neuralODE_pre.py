@@ -12,7 +12,7 @@ from src.ODENet import data_scaler
 
 # %% Extract data
 # dataPath = "data/CH4_sk_L_2000.h5"
-dataPath = "data/CH4_sk_S_L1000_U2000.h5"
+dataPath = "data/CH4_sk_L_L1000_U4000.h5"
 
 ddOrg = dd.read_hdf(dataPath, key="c")
 ddWdot = dd.read_hdf(dataPath, key="wdot")

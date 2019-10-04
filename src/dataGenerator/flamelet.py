@@ -116,9 +116,9 @@ f.oxidizer_inlet.T = 294  # K
 
 # Set refinement parameters, if used
 # SMALL
-f.set_refine_criteria(ratio=100.0, slope=0.005, curve=0.01, prune=-0.1)
+# f.set_refine_criteria(ratio=100.0, slope=0.005, curve=0.01, prune=-0.1)
 # Large
-# f.set_refine_criteria(ratio=100.0, slope=0.002, curve=0.002, prune=-0.1)
+f.set_refine_criteria(ratio=100.0, slope=0.002, curve=0.002, prune=-0.1)
 # XL
 # f.set_refine_criteria(ratio=100.0, slope=0.001, curve=0.001, prune=-0.1)
 # QUICK

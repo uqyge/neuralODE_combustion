@@ -36,7 +36,7 @@ def epoch_set(cycle=3):
     return base, ep_size
 
 
-cycle = 7
+cycle = 8
 c_len, epochs = epoch_set(cycle=cycle)
 
 epoch_size = x_train.shape[0]
@@ -47,7 +47,7 @@ scale = 3
 fc = True
 dataSet = dataPath.split("/")[1].split(".")[0]
 
-for n_neuron in [64]:
+for n_neuron in [128]:
     for branches in [5]:
         for fc in [True]:
             m_name = "{}_n{}_b{}_fc{}".format(dataSet, n_neuron, branches, fc)
@@ -99,7 +99,7 @@ for n_neuron in [64]:
             callbacks_list2 = callbacks_list1 + [schedule]
 
             # fit the model course
-            model.load_weights(filepath)
+            # model.load_weights(filepath)
             history = model.fit(
                 x_train,
                 y_train,

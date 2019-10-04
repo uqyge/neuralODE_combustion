@@ -143,7 +143,7 @@ df_Y.iloc[idx, :][gas.species_names]
 
 #%%
 px.scatter(
-    wdot[(wdot.amax > 10) & (wdot.amax < 1000)].sample(frac=0.2),
+    wdot[(wdot.amax > 10) & (wdot.amax < 2000)].sample(frac=0.2),
     x="f",
     y="O2",
     color="amax",
